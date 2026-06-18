@@ -1,0 +1,2251 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<title>Pocket Balance</title>
+
+<!-- iOS Safari: enables "Add to Home Screen" as a standalone app (no Safari UI),
+     sets the status bar style, and gives the home screen icon/title. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pocket Balance">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1F4E4E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' fill='%231F4E4E'/%3E%3Ctext x='90' y='118' font-size='92' font-family='-apple-system,sans-serif' font-weight='700' fill='white' text-anchor='middle'%3E%C2%A5%3C/text%3E%3C/svg%3E">
+
+<style>
+:root{
+  --paper:#FAF8F3;
+  --paper-raised:#FFFFFF;
+  --ink:#23282B;
+  --ink-soft:#6B7280;
+  --line:#E7E2D8;
+  --teal:#2D6A6A;
+  --teal-deep:#1F4E4E;
+  --teal-tint:#E4EEEE;
+  --coral:#D8694F;
+  --coral-tint:#FBE9E3;
+  --gold:#B8923A;
+  --gold-tint:#F6EFDD;
+  --green:#3F7D5C;
+  --green-tint:#E6EFE8;
+  --shadow: 0 1px 2px rgba(35,40,43,0.04), 0 4px 14px rgba(35,40,43,0.06);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:none;
+}
+
+.num{
+  font-feature-settings:"tnum" 1;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:0.01em;
+}
+
+#app{
+  max-width:560px;
+  margin:0 auto;
+  min-height:100vh;
+  padding-bottom: calc(78px + var(--safe-bottom));
+  position:relative;
+}
+
+/* ===== Top bar ===== */
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:var(--paper);
+  padding: calc(14px + var(--safe-top)) 18px 10px;
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  border-bottom:1px solid transparent;
+}
+.topbar.scrolled{border-bottom-color:var(--line);}
+.brand{
+  font-size:19px;
+  font-weight:700;
+  letter-spacing:-0.01em;
+  color:var(--ink);
+}
+.brand .dot{color:var(--teal);}
+.topbar-sub{font-size:12px; color:var(--ink-soft);}
+
+/* ===== Tab panels ===== */
+.tab-panel{display:none; padding: 4px 16px 28px;}
+.tab-panel.active{display:block; animation:fadeIn .22s ease;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+/* ===== Bottom nav ===== */
+.tabbar{
+  position:fixed;
+  left:0; right:0; bottom:0;
+  z-index:30;
+  background:rgba(250,248,243,0.92);
+  backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);
+  padding: 8px 6px calc(8px + var(--safe-bottom));
+  display:flex;
+  justify-content:space-around;
+  max-width:560px;
+  margin:0 auto;
+}
+.tab-btn{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+  background:none;
+  border:none;
+  color:var(--ink-soft);
+  font-size:11px;
+  font-family:inherit;
+  padding:6px 2px;
+  border-radius:10px;
+  -webkit-tap-highlight-color:transparent;
+}
+.tab-btn svg{width:22px; height:22px; stroke:var(--ink-soft); fill:none; stroke-width:1.7;}
+.tab-btn.active{color:var(--teal-deep);}
+.tab-btn.active svg{stroke:var(--teal-deep);}
+.tab-btn.active{font-weight:600;}
+
+/* ===== Cards / sections ===== */
+.card{
+  background:var(--paper-raised);
+  border-radius:var(--radius);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  padding:16px;
+  margin-bottom:14px;
+}
+.section-label{
+  font-size:12px;
+  font-weight:700;
+  color:var(--ink-soft);
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  margin: 22px 2px 8px;
+}
+.section-label:first-child{margin-top:6px;}
+
+/* ===== Hero balance ===== */
+.hero{
+  border-radius:18px;
+  background:linear-gradient(150deg, var(--teal-deep), var(--teal) 75%);
+  color:#fff;
+  padding:20px 18px 18px;
+  margin-bottom:16px;
+  box-shadow: 0 6px 20px rgba(31,78,78,0.25);
+  position:relative;
+  overflow:hidden;
+}
+.hero::after{
+  content:"";
+  position:absolute;
+  right:-40px; top:-40px;
+  width:160px; height:160px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.06);
+}
+.hero-row{display:flex; justify-content:space-between; align-items:flex-end; gap:12px;}
+.hero-label{font-size:12px; opacity:0.78; font-weight:600; letter-spacing:0.03em;}
+.hero-amount{font-size:34px; font-weight:700; line-height:1.1; margin-top:4px;}
+.hero-amount.negative{color:#FFD9CC;}
+.hero-ring{flex-shrink:0;}
+.hero-breakdown{
+  display:flex;
+  gap:14px;
+  margin-top:16px;
+  padding-top:14px;
+  border-top:1px solid rgba(255,255,255,0.18);
+}
+.hero-bd-item{flex:1;}
+.hero-bd-label{font-size:10.5px; opacity:0.75;}
+.hero-bd-value{font-size:15px; font-weight:700; margin-top:2px;}
+
+/* ===== Account list ===== */
+.acct-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 0;
+  border-bottom:1px solid var(--line);
+}
+.acct-row:last-child{border-bottom:none;}
+.acct-name-wrap{display:flex; align-items:center; gap:8px;}
+.acct-name{font-size:14.5px; font-weight:600;}
+.acct-badge{
+  font-size:10px; font-weight:700; color:var(--teal-deep);
+  background:var(--teal-tint); padding:2px 6px; border-radius:6px;
+}
+.acct-balance{font-size:15.5px; font-weight:700;}
+.acct-total-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding-top:12px; margin-top:4px; border-top:1px solid var(--line);
+}
+.acct-total-label{font-size:13px; color:var(--ink-soft); font-weight:600;}
+.acct-total-value{font-size:19px; font-weight:700;}
+
+/* ===== Buttons ===== */
+.btn{
+  appearance:none; border:none; cursor:pointer;
+  font-family:inherit;
+  border-radius:12px;
+  padding:13px 16px;
+  font-size:15px;
+  font-weight:600;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  -webkit-tap-highlight-color:transparent;
+  transition:transform .08s ease, opacity .15s ease;
+}
+.btn:active{transform:scale(0.97); opacity:0.9;}
+.btn-primary{background:var(--teal-deep); color:#fff;}
+.btn-secondary{background:var(--teal-tint); color:var(--teal-deep);}
+.btn-coral{background:var(--coral); color:#fff;}
+.btn-ghost{background:transparent; color:var(--ink-soft); border:1px solid var(--line);}
+.btn-block{width:100%;}
+.btn-sm{padding:8px 12px; font-size:13px; border-radius:9px;}
+.fab-row{display:flex; gap:10px; margin-bottom:6px;}
+
+/* ===== Forms ===== */
+.field{margin-bottom:14px;}
+.field label{
+  display:block; font-size:12.5px; font-weight:600; color:var(--ink-soft);
+  margin-bottom:6px;
+}
+.field .req{color:var(--coral); margin-left:2px;}
+input[type=text], input[type=number], input[type=date], select, textarea{
+  width:100%;
+  font-family:inherit;
+  font-size:15.5px;
+  padding:11px 12px;
+  border-radius:10px;
+  border:1.3px solid var(--line);
+  background:var(--paper);
+  color:var(--ink);
+  -webkit-appearance:none;
+}
+input:focus, select:focus, textarea:focus{
+  outline:none; border-color:var(--teal); background:#fff;
+}
+textarea{resize:vertical; min-height:44px;}
+
+.segmented{
+  display:flex; background:var(--paper); border:1.3px solid var(--line);
+  border-radius:10px; padding:3px; gap:3px;
+}
+.segmented button{
+  flex:1; border:none; background:none; font-family:inherit;
+  padding:9px 4px; border-radius:8px; font-size:14px; font-weight:600;
+  color:var(--ink-soft); cursor:pointer;
+}
+.segmented button.active{background:var(--teal-deep); color:#fff;}
+
+.chip-group{display:flex; flex-wrap:wrap; gap:7px;}
+.chip{
+  border:1.3px solid var(--line); background:var(--paper);
+  border-radius:20px; padding:8px 14px; font-size:13.5px; font-weight:600;
+  color:var(--ink); cursor:pointer; font-family:inherit;
+}
+.chip.active{background:var(--teal-deep); border-color:var(--teal-deep); color:#fff;}
+.chip.add-new{color:var(--teal-deep); border-style:dashed;}
+
+.form-actions{display:flex; gap:10px; margin-top:18px;}
+.form-actions .btn{flex:1;}
+
+/* ===== List entries ===== */
+.entry{
+  display:flex; align-items:center; gap:12px;
+  padding:12px 0; border-bottom:1px solid var(--line);
+}
+.entry:last-child{border-bottom:none;}
+.entry-icon{
+  width:36px; height:36px; border-radius:10px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:15px; font-weight:700;
+}
+.entry-icon.credit{background:var(--coral-tint); color:var(--coral);}
+.entry-icon.deposit{background:var(--green-tint); color:var(--green);}
+.entry-icon.withdraw{background:var(--gold-tint); color:var(--gold);}
+.entry-main{flex:1; min-width:0;}
+.entry-title{font-size:14px; font-weight:600; display:flex; gap:6px; align-items:center;}
+.entry-sub{font-size:12px; color:var(--ink-soft); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.entry-amount{font-size:15px; font-weight:700; flex-shrink:0; text-align:right;}
+.entry-amount.out{color:var(--coral);}
+.entry-amount.in{color:var(--green);}
+.entry-actions{display:flex; gap:4px; flex-shrink:0;}
+.icon-btn{
+  width:30px; height:30px; border-radius:8px; border:none; background:var(--paper);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.icon-btn svg{width:15px; height:15px; stroke:var(--ink-soft); fill:none; stroke-width:1.8;}
+
+.tiny-tag{
+  font-size:10px; font-weight:700; padding:1.5px 6px; border-radius:6px;
+}
+.tiny-tag.personal{background:var(--teal-tint); color:var(--teal-deep);}
+.tiny-tag.household{background:var(--gold-tint); color:var(--gold);}
+
+.empty-state{
+  text-align:center; padding:34px 12px; color:var(--ink-soft);
+}
+.empty-state svg{width:38px; height:38px; stroke:var(--line); margin-bottom:10px;}
+.empty-state .et{font-size:14px; font-weight:600; color:var(--ink); margin-bottom:3px;}
+.empty-state .es{font-size:12.5px;}
+
+/* ===== Filter row for lists ===== */
+.filter-row{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:10px;}
+.filter-row::-webkit-scrollbar{display:none;}
+.filter-chip{
+  white-space:nowrap; border:1.3px solid var(--line); background:var(--paper-raised);
+  border-radius:20px; padding:7px 13px; font-size:12.5px; font-weight:600;
+  color:var(--ink-soft); cursor:pointer; font-family:inherit; flex-shrink:0;
+}
+.filter-chip.active{background:var(--ink); border-color:var(--ink); color:#fff;}
+
+/* ===== Modal ===== */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(35,40,43,0.42);
+  z-index:100; display:none; align-items:flex-end; justify-content:center;
+  backdrop-filter: blur(2px);
+}
+.modal-overlay.show{display:flex; animation:overlayIn .18s ease;}
+@keyframes overlayIn{from{opacity:0;} to{opacity:1;}}
+.modal-sheet{
+  background:var(--paper);
+  width:100%; max-width:560px;
+  border-radius:20px 20px 0 0;
+  max-height:90vh; overflow-y:auto;
+  padding: 10px 18px calc(24px + var(--safe-bottom));
+  animation:sheetUp .26s cubic-bezier(.2,.9,.3,1);
+}
+@keyframes sheetUp{from{transform:translateY(24px); opacity:0.4;} to{transform:translateY(0); opacity:1;}}
+.modal-handle{
+  width:36px; height:4px; background:var(--line); border-radius:3px; margin:6px auto 14px;
+}
+.modal-header{
+  display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;
+}
+.modal-title{font-size:17px; font-weight:700;}
+.modal-close{
+  width:30px; height:30px; border-radius:50%; border:none; background:var(--line);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.modal-close svg{width:14px; height:14px; stroke:var(--ink-soft); stroke-width:2.2;}
+
+/* ===== Pie / charts ===== */
+.pie-wrap{display:flex; align-items:center; gap:18px;}
+.pie-legend{flex:1; display:flex; flex-direction:column; gap:8px; min-width:0;}
+.legend-row{display:flex; align-items:center; gap:8px; font-size:12.5px;}
+.legend-dot{width:9px; height:9px; border-radius:50%; flex-shrink:0;}
+.legend-name{flex:1; color:var(--ink); font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.legend-val{color:var(--ink-soft); flex-shrink:0;}
+
+/* ===== Month nav ===== */
+.month-nav{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:14px;
+}
+.month-nav .mn-btn{
+  width:34px; height:34px; border-radius:50%; border:1.3px solid var(--line);
+  background:var(--paper-raised); display:flex; align-items:center; justify-content:center;
+  cursor:pointer;
+}
+.month-nav .mn-btn svg{width:16px; height:16px; stroke:var(--ink); stroke-width:2;}
+.month-nav .mn-label{font-size:17px; font-weight:700;}
+
+/* ===== Table ===== */
+.tbl{width:100%; border-collapse:collapse; font-size:12.8px;}
+.tbl th{
+  text-align:right; font-weight:700; color:var(--ink-soft); padding:7px 4px;
+  border-bottom:1.3px solid var(--line); font-size:11px; text-transform:uppercase; letter-spacing:0.03em;
+}
+.tbl th:first-child, .tbl td:first-child{text-align:left;}
+.tbl td{text-align:right; padding:9px 4px; border-bottom:1px solid var(--line);}
+.tbl tr.total-row td{font-weight:700; border-top:1.5px solid var(--ink); border-bottom:none; padding-top:11px;}
+.tbl tr.current-month td{background:var(--teal-tint);}
+
+/* ===== Settings rows ===== */
+.settings-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:13px 0; border-bottom:1px solid var(--line);
+}
+.settings-row:last-child{border-bottom:none;}
+.settings-row .sr-main{flex:1;}
+.settings-row .sr-name{font-size:14.5px; font-weight:600;}
+.settings-row .sr-sub{font-size:12px; color:var(--ink-soft); margin-top:1px;}
+
+.cat-group{margin-bottom:18px;}
+.cat-main-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 0; font-weight:700; font-size:14.5px;
+}
+.cat-sub-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px 0 8px 16px; font-size:13.5px; color:var(--ink-soft);
+  border-top:1px solid var(--line);
+}
+
+.helper-text{font-size:12px; color:var(--ink-soft); margin-top:-4px; margin-bottom:14px; line-height:1.5;}
+
+.toast{
+  position:fixed; bottom: calc(94px + var(--safe-bottom)); left:50%;
+  transform:translateX(-50%) translateY(8px);
+  background:var(--ink); color:#fff; font-size:13px; font-weight:600;
+  padding:10px 18px; border-radius:30px; z-index:200; opacity:0;
+  pointer-events:none; transition:all .25s ease; white-space:nowrap;
+  box-shadow:0 6px 18px rgba(0,0,0,0.2);
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+::-webkit-scrollbar{width:0; height:0;}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="topbar" id="topbar">
+    <div class="brand">Pocket<span class="dot">.</span>Balance</div>
+    <div class="topbar-sub" id="todayLabel"></div>
+  </div>
+
+  <!-- ============ HOME ============ -->
+  <div class="tab-panel active" id="panel-home"></div>
+
+  <!-- ============ LARGE EXPENSE ============ -->
+  <div class="tab-panel" id="panel-large"></div>
+
+  <!-- ============ SUMMARY ============ -->
+  <div class="tab-panel" id="panel-summary"></div>
+
+  <!-- ============ SETTINGS ============ -->
+  <div class="tab-panel" id="panel-settings"></div>
+</div>
+
+<div class="tabbar">
+  <button class="tab-btn active" data-tab="home">
+    <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+    ホーム
+  </button>
+  <button class="tab-btn" data-tab="large">
+    <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M8 14h2"/></svg>
+    大型出費
+  </button>
+  <button class="tab-btn" data-tab="summary">
+    <svg viewBox="0 0 24 24"><path d="M21 12A9 9 0 1112 3"/><path d="M21 12L12 12 12 3"/></svg>
+    サマリ
+  </button>
+  <button class="tab-btn" data-tab="settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+    設定
+  </button>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-sheet" id="modalSheet"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+/* =========================================================================
+   DATA LAYER
+   ========================================================================= */
+const STORAGE_KEY = 'pocketBalance.v1';
+
+function uid(prefix){
+  return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7);
+}
+
+function defaultData(){
+  return {
+    accounts: [
+      { id: uid('acc'), name:'メイン口座', balance:700000, isMain:true },
+    ],
+    cards: [
+      { id: uid('card'), name:'楽天カード', type:'personal' },
+      { id: uid('card'), name:'家族カード', type:'household' },
+    ],
+    categories: {
+      personal: [
+        { id: uid('cat'), name:'食費', subs:[
+          {id:uid('sub'), name:'外食'}, {id:uid('sub'), name:'スーパー'}, {id:uid('sub'), name:'コンビニ'}
+        ]},
+        { id: uid('cat'), name:'趣味', subs:[
+          {id:uid('sub'), name:'ゲーム'}, {id:uid('sub'), name:'書籍'}
+        ]},
+      ],
+      household: [
+        { id: uid('cat'), name:'住居', subs:[
+          {id:uid('sub'), name:'家賃'}, {id:uid('sub'), name:'光熱費'}, {id:uid('sub'), name:'通信費'}
+        ]},
+        { id: uid('cat'), name:'教育', subs:[
+          {id:uid('sub'), name:'保育園'}, {id:uid('sub'), name:'習い事'}
+        ]},
+      ]
+    },
+    creditEntries: [],   // {id, date, type, cardId, amount, mainCategory, subCategory, settlementAccountId, memo}
+    bankEntries: [],      // {id, date, accountId, transactionType, amount, description, memo}
+    largeExpenses: [],    // {id, name, amount, startDate, frequency, type, mainCategory, subCategory, accountId, memo, active}
+  };
+}
+
+let DB = loadData();
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultData();
+    const parsed = JSON.parse(raw);
+    // light migration safety: ensure all top-level keys exist
+    const d = defaultData();
+    return Object.assign(d, parsed);
+  }catch(e){
+    console.error('load failed', e);
+    return defaultData();
+  }
+}
+
+function saveData(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+    recordChangeLogEntry();
+    maybeRunWeeklySnapshot();
+  }catch(e){
+    console.error('save failed', e);
+    showToast('保存に失敗しました');
+  }
+}
+
+/* =========================================================================
+   AUTOMATIC BACKUP LAYER
+   -------------------------------------------------------------------------
+   Browsers do not allow a page to silently write files to disk, so a fully
+   automatic "save to a folder" backup is not possible from inside the app.
+   Instead this keeps two safety nets entirely inside localStorage:
+
+   1. CHANGE LOG  - a lightweight diff-like history. Every saveData() call
+      appends a snapshot of record counts + a timestamp (not the full data,
+      to stay small). Lets us tell *when* something changed and roughly
+      *what* changed, and is the trigger for the weekly snapshot timer.
+
+   2. WEEKLY SNAPSHOTS - a full copy of the entire DB, taken automatically
+      at most once every 7 days (checked on every app load/save), keeping
+      the most recent 8 generations (~2 months of weekly history). These
+      live under their own storage keys so they're never overwritten by
+      normal use of the app.
+
+   Neither of these protects against the browser/OS clearing site data
+   entirely (e.g. "Clear browsing data", switching browsers, low-storage
+   eviction). That can only be protected against by an actual JSON file
+   saved outside the browser - so this layer also tracks the last real
+   export and surfaces a reminder banner if it's gotten stale.
+   ========================================================================= */
+const CHANGELOG_KEY = 'pocketBalance.changelog.v1';
+const SNAPSHOTS_KEY = 'pocketBalance.snapshots.v1';
+const LASTEXPORT_KEY = 'pocketBalance.lastExport.v1';
+const MAX_CHANGELOG = 60;       // keep last 60 change events
+const MAX_SNAPSHOTS = 8;        // keep last 8 weekly snapshots (~2 months)
+const SNAPSHOT_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+function recordCounts(){
+  return {
+    accounts: DB.accounts.length,
+    cards: DB.cards.length,
+    creditEntries: DB.creditEntries.length,
+    bankEntries: DB.bankEntries.length,
+    largeExpenses: DB.largeExpenses.length,
+  };
+}
+
+function recordChangeLogEntry(){
+  try{
+    const log = getChangeLog();
+    const prev = log[0];
+    const counts = recordCounts();
+    // skip logging if nothing actually changed in count terms and last entry was <2s ago
+    // (avoids flooding the log from rapid successive saves of the same action)
+    const now = Date.now();
+    if(prev && prev.t && (now - prev.t) < 1500 && JSON.stringify(prev.counts)===JSON.stringify(counts)){
+      return;
+    }
+    log.unshift({ t: now, counts });
+    while(log.length > MAX_CHANGELOG) log.pop();
+    localStorage.setItem(CHANGELOG_KEY, JSON.stringify(log));
+  }catch(e){
+    console.error('changelog write failed', e);
+  }
+}
+
+function getChangeLog(){
+  try{
+    const raw = localStorage.getItem(CHANGELOG_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+
+function getSnapshots(){
+  try{
+    const raw = localStorage.getItem(SNAPSHOTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+
+function saveSnapshotsList(list){
+  try{
+    localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(list));
+  }catch(e){
+    console.error('snapshot write failed', e);
+    // localStorage is likely full - drop the oldest snapshot and retry once
+    if(list.length > 1){
+      list.pop();
+      try{ localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(list)); }catch(e2){ /* give up silently */ }
+    }
+  }
+}
+
+function maybeRunWeeklySnapshot(force){
+  const snapshots = getSnapshots();
+  const latest = snapshots[0];
+  const now = Date.now();
+  if(!force && latest && (now - latest.t) < SNAPSHOT_INTERVAL_MS) return;
+  snapshots.unshift({ t: now, data: JSON.parse(JSON.stringify(DB)) });
+  while(snapshots.length > MAX_SNAPSHOTS) snapshots.pop();
+  saveSnapshotsList(snapshots);
+}
+
+function getLastExportTime(){
+  const v = localStorage.getItem(LASTEXPORT_KEY);
+  return v ? Number(v) : null;
+}
+function markExported(){
+  localStorage.setItem(LASTEXPORT_KEY, String(Date.now()));
+}
+
+function restoreSnapshot(timestamp){
+  const snapshots = getSnapshots();
+  const snap = snapshots.find(s=>s.t===timestamp);
+  if(!snap) return false;
+  DB = Object.assign(defaultData(), snap.data);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+  recordChangeLogEntry();
+  return true;
+}
+
+function fmtDateTime(ts){
+  const d = new Date(ts);
+  return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function daysSince(ts){
+  if(!ts) return null;
+  return Math.floor((Date.now()-ts) / (24*60*60*1000));
+}
+
+/* =========================================================================
+   UTILITIES
+   ========================================================================= */
+function yen(n){
+  const v = Math.round(Number(n)||0);
+  return (v<0 ? '-' : '') + '¥' + Math.abs(v).toLocaleString('ja-JP');
+}
+function yenSigned(n){
+  const v = Math.round(Number(n)||0);
+  return (v>0 ? '+' : '') + yen(v);
+}
+function todayISO(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function fmtDateShort(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return `${Number(m)}/${Number(d)}`;
+}
+function monthKey(date){ return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0'); }
+function isoToMonthKey(iso){ return iso.slice(0,7); }
+function monthLabel(mk){
+  const [y,m] = mk.split('-');
+  return `${y}年${Number(m)}月`;
+}
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function findAccount(id){ return DB.accounts.find(a=>a.id===id); }
+function findCard(id){ return DB.cards.find(c=>c.id===id); }
+function mainAccount(){ return DB.accounts.find(a=>a.isMain) || DB.accounts[0]; }
+function typeLabel(t){ return t==='personal' ? '個人' : '家計'; }
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+/* ===== large expense occurrence logic ===== */
+const FREQ_MONTHS = { monthly:1, bimonthly:2, quarterly:3, semiannual:6, annual:12 };
+const FREQ_LABEL = { monthly:'毎月', bimonthly:'2か月ごと', quarterly:'3か月ごと', semiannual:'半年ごと', annual:'年1回' };
+
+// Does this large expense occur within the given month (mk = "YYYY-MM")?
+function occursInMonth(exp, mk){
+  if(exp.active === false) return false;
+  if(!exp.startDate) return false;
+  const start = new Date(exp.startDate+'T00:00:00');
+  const [ty, tm] = mk.split('-').map(Number);
+  const startMonths = start.getFullYear()*12 + (start.getMonth());
+  const targetMonths = ty*12 + (tm-1);
+  const diff = targetMonths - startMonths;
+  if(diff < 0) return false;
+  const interval = FREQ_MONTHS[exp.frequency] || 1;
+  return diff % interval === 0;
+}
+
+// All large expenses occurring in month mk, each with computed amount
+function largeExpensesForMonth(mk){
+  return DB.largeExpenses.filter(e=>occursInMonth(e, mk));
+}
+
+function creditEntriesForMonth(mk){
+  return DB.creditEntries.filter(e=>isoToMonthKey(e.date)===mk);
+}
+function bankEntriesForMonth(mk){
+  return DB.bankEntries.filter(e=>isoToMonthKey(e.date)===mk);
+}
+
+function totalBalance(){
+  return DB.accounts.reduce((s,a)=>s+Number(a.balance||0), 0);
+}
+
+function creditTotalForMonth(mk){
+  return creditEntriesForMonth(mk).reduce((s,e)=>s+Number(e.amount||0), 0);
+}
+function largeTotalForMonth(mk){
+  return largeExpensesForMonth(mk).reduce((s,e)=>s+Number(e.amount||0), 0);
+}
+function realBalanceForMonth(mk){
+  return totalBalance() - creditTotalForMonth(mk) - largeTotalForMonth(mk);
+}
+
+/* =========================================================================
+   NAVIGATION
+   ========================================================================= */
+let currentTab = 'home';
+let summaryMonth = monthKey(new Date());
+
+function switchTab(tab){
+  currentTab = tab;
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+  renderCurrentTab();
+  document.getElementById('app').scrollIntoView({block:'start'});
+}
+
+function renderCurrentTab(){
+  if(currentTab==='home') renderHome();
+  else if(currentTab==='large') renderLarge();
+  else if(currentTab==='summary') renderSummary();
+  else if(currentTab==='settings') renderSettings();
+}
+
+function renderAll(){
+  renderHome();
+  renderLarge();
+  renderSummary();
+  renderSettings();
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>switchTab(btn.dataset.tab));
+});
+
+document.getElementById('todayLabel').textContent = (()=>{
+  const d = new Date();
+  return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+})();
+
+/* =========================================================================
+   MODAL HELPERS
+   ========================================================================= */
+const modalOverlay = document.getElementById('modalOverlay');
+const modalSheet = document.getElementById('modalSheet');
+
+function openModal(html){
+  modalSheet.innerHTML = `<div class="modal-handle"></div>` + html;
+  modalOverlay.classList.add('show');
+}
+function closeModal(){
+  modalOverlay.classList.remove('show');
+  modalSheet.innerHTML = '';
+}
+modalOverlay.addEventListener('click', (e)=>{
+  if(e.target === modalOverlay) closeModal();
+});
+
+function modalHeader(title){
+  return `<div class="modal-header">
+    <div class="modal-title">${escapeHtml(title)}</div>
+    <button class="modal-close" onclick="closeModal()"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" stroke-linecap="round"/></svg></button>
+  </div>`;
+}
+
+/* ===== Custom confirm dialog (iOS Safari can block/ignore window.confirm,
+   especially in standalone/home-screen mode, which silently no-ops delete
+   actions). This renders an in-app sheet instead and always works the same
+   way across iOS, Android, and desktop. ===== */
+const confirmOverlay = document.createElement('div');
+confirmOverlay.className = 'modal-overlay';
+confirmOverlay.id = 'confirmOverlay';
+confirmOverlay.innerHTML = `<div class="modal-sheet" id="confirmSheet" style="border-radius:20px; max-width:420px; margin:0 16px 16px;"></div>`;
+document.body.appendChild(confirmOverlay);
+
+function askConfirm(message, onConfirm, opts){
+  opts = opts || {};
+  const danger = opts.danger !== false; // default true (red confirm button, since most confirms here are deletes)
+  const confirmLabel = opts.confirmLabel || '削除する';
+  const cancelLabel = opts.cancelLabel || 'キャンセル';
+  const sheet = document.getElementById('confirmSheet');
+  sheet.innerHTML = `
+    <div style="padding:22px 20px 18px; text-align:center;">
+      <div style="font-size:15px; line-height:1.6; color:var(--ink); margin-bottom:18px;">${escapeHtml(message)}</div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button class="btn ${danger?'btn-coral':'btn-primary'} btn-block" id="confirmYesBtn">${escapeHtml(confirmLabel)}</button>
+        <button class="btn btn-ghost btn-block" id="confirmNoBtn">${escapeHtml(cancelLabel)}</button>
+      </div>
+    </div>
+  `;
+  confirmOverlay.classList.add('show');
+  const cleanup = ()=>{ confirmOverlay.classList.remove('show'); sheet.innerHTML=''; };
+  document.getElementById('confirmYesBtn').onclick = ()=>{ cleanup(); onConfirm(); };
+  document.getElementById('confirmNoBtn').onclick = cleanup;
+}
+confirmOverlay.addEventListener('click', (e)=>{
+  if(e.target === confirmOverlay){
+    confirmOverlay.classList.remove('show');
+    document.getElementById('confirmSheet').innerHTML = '';
+  }
+});
+
+/* =========================================================================
+   HOME TAB
+   ========================================================================= */
+let homeListFilter = 'all'; // all | credit | bank
+
+function renderHome(){
+  const mk = monthKey(new Date());
+  const total = totalBalance();
+  const creditTotal = creditTotalForMonth(mk);
+  const largeTotal = largeTotalForMonth(mk);
+  const real = realBalanceForMonth(mk);
+
+  const panel = document.getElementById('panel-home');
+  panel.innerHTML = `
+    ${homeBackupNudgeHTML()}
+    <div class="hero">
+      <div class="hero-row">
+        <div>
+          <div class="hero-label">実質残高（${monthLabel(mk)}）</div>
+          <div class="hero-amount num ${real<0?'negative':''}">${yen(real)}</div>
+        </div>
+        ${heroRingSVG(total, creditTotal+largeTotal)}
+      </div>
+      <div class="hero-breakdown">
+        <div class="hero-bd-item">
+          <div class="hero-bd-label">総口座残高</div>
+          <div class="hero-bd-value num">${yen(total)}</div>
+        </div>
+        <div class="hero-bd-item">
+          <div class="hero-bd-label">クレカ支出（今月）</div>
+          <div class="hero-bd-value num">${yen(creditTotal)}</div>
+        </div>
+        <div class="hero-bd-item">
+          <div class="hero-bd-label">大型出費（今月）</div>
+          <div class="hero-bd-value num">${yen(largeTotal)}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fab-row">
+      <button class="btn btn-primary" style="flex:1" onclick="openCreditForm()">
+        <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        カード明細
+      </button>
+      <button class="btn btn-secondary" style="flex:1" onclick="openBankForm()">
+        <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><path d="M3 10l9-6 9 6"/><path d="M5 10v9M19 10v9M9 10v9M15 10v9"/><path d="M3 19h18"/></svg>
+        入出金登録
+      </button>
+    </div>
+
+    <div class="section-label">口座残高</div>
+    <div class="card">
+      <div id="acctListHome"></div>
+    </div>
+
+    <div class="section-label">明細一覧</div>
+    <div class="card">
+      <div class="filter-row" id="homeFilterRow"></div>
+      <div id="homeEntryList"></div>
+    </div>
+  `;
+
+  renderAccountListHome();
+  renderHomeFilterRow();
+  renderHomeEntryList();
+}
+
+let homeNudgeDismissed = false; // resets on full page reload, by design
+
+function homeBackupNudgeHTML(){
+  if(homeNudgeDismissed) return '';
+  const lastExport = getLastExportTime();
+  const exportDays = daysSince(lastExport);
+  const stale = lastExport===null || exportDays >= 30;
+  if(!stale) return '';
+  const msg = lastExport===null
+    ? 'まだバックアップファイルを保存していません。タップして書き出しましょう。'
+    : `最後のバックアップから${exportDays}日経っています。タップして書き出しましょう。`;
+  return `
+    <div class="card" style="background:var(--coral-tint); border-color:var(--coral); display:flex; align-items:center; gap:10px; padding:12px 13px; margin-bottom:14px; cursor:pointer;" onclick="switchTab('settings')">
+      <span style="font-size:16px;">⚠️</span>
+      <div style="flex:1; font-size:12.5px; line-height:1.5; color:var(--ink);">${escapeHtml(msg)}</div>
+      <button class="icon-btn" style="background:transparent;" onclick="event.stopPropagation(); dismissHomeNudge();">
+        <svg viewBox="0 0 24 24" stroke="var(--ink-soft)" fill="none" stroke-width="2"><path d="M5 5l14 14M19 5L5 19"/></svg>
+      </button>
+    </div>
+  `;
+}
+function dismissHomeNudge(){
+  homeNudgeDismissed = true;
+  renderHome();
+}
+
+function heroRingSVG(total, spent){
+  const pct = total>0 ? Math.max(0, Math.min(1, 1 - spent/total)) : 0;
+  const r = 30, c = 2*Math.PI*r;
+  const offset = c * (1-pct);
+  return `
+  <svg width="64" height="64" viewBox="0 0 70 70" class="hero-ring">
+    <circle cx="35" cy="35" r="${r}" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="6"/>
+    <circle cx="35" cy="35" r="${r}" fill="none" stroke="#fff" stroke-width="6"
+      stroke-dasharray="${c}" stroke-dashoffset="${offset}" stroke-linecap="round"
+      transform="rotate(-90 35 35)"/>
+    <text x="35" y="40" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">${Math.round(pct*100)}%</text>
+  </svg>`;
+}
+
+function renderAccountListHome(){
+  const el = document.getElementById('acctListHome');
+  if(DB.accounts.length===0){
+    el.innerHTML = `<div class="empty-state"><div class="et">口座が未登録です</div><div class="es">設定タブから口座を追加してください</div></div>`;
+    return;
+  }
+  el.innerHTML = DB.accounts.map(a=>`
+    <div class="acct-row">
+      <div class="acct-name-wrap">
+        <span class="acct-name">${escapeHtml(a.name)}</span>
+        ${a.isMain ? '<span class="acct-badge">メイン</span>' : ''}
+      </div>
+      <span class="acct-balance num">${yen(a.balance)}</span>
+    </div>
+  `).join('') + `
+    <div class="acct-total-row">
+      <span class="acct-total-label">総残高</span>
+      <span class="acct-total-value num">${yen(totalBalance())}</span>
+    </div>
+  `;
+}
+
+function renderHomeFilterRow(){
+  const el = document.getElementById('homeFilterRow');
+  const filters = [['all','すべて'],['credit','カード'],['bank','入出金']];
+  el.innerHTML = filters.map(([key,label])=>
+    `<button class="filter-chip ${homeListFilter===key?'active':''}" onclick="setHomeFilter('${key}')">${label}</button>`
+  ).join('');
+}
+function setHomeFilter(key){
+  homeListFilter = key;
+  renderHomeFilterRow();
+  renderHomeEntryList();
+}
+
+function combinedHomeEntries(){
+  const credit = DB.creditEntries.map(e=>({...e, _kind:'credit'}));
+  const bank = DB.bankEntries.map(e=>({...e, _kind:'bank'}));
+  let all = [...credit, ...bank];
+  if(homeListFilter==='credit') all = credit;
+  if(homeListFilter==='bank') all = bank;
+  all.sort((a,b)=> b.date.localeCompare(a.date) || (b.id > a.id ? 1 : -1));
+  return all;
+}
+
+function renderHomeEntryList(){
+  const el = document.getElementById('homeEntryList');
+  const items = combinedHomeEntries();
+  if(items.length===0){
+    el.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" fill="none"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+      <div class="et">まだ明細がありません</div>
+      <div class="es">上のボタンから登録してみましょう</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = items.slice(0,80).map(e=>{
+    if(e._kind==='credit'){
+      const card = findCard(e.cardId);
+      return `
+      <div class="entry">
+        <div class="entry-icon credit">C</div>
+        <div class="entry-main">
+          <div class="entry-title">${escapeHtml(e.mainCategory)}${e.subCategory ? ' / '+escapeHtml(e.subCategory):''}
+            <span class="tiny-tag ${e.type}">${typeLabel(e.type)}</span>
+          </div>
+          <div class="entry-sub">${fmtDateShort(e.date)}・${escapeHtml(card?card.name:'(削除済みカード)')}${e.memo? '・'+escapeHtml(e.memo):''}</div>
+        </div>
+        <div class="entry-amount out num">-${yen(e.amount).slice(1)}</div>
+        <div class="entry-actions">
+          <button class="icon-btn" onclick="openCreditForm('${e.id}')"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
+          <button class="icon-btn" onclick="deleteCreditEntry('${e.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m-9 0l1 14h8l1-14"/></svg></button>
+        </div>
+      </div>`;
+    }else{
+      const acct = findAccount(e.accountId);
+      const isDeposit = e.transactionType==='deposit';
+      return `
+      <div class="entry">
+        <div class="entry-icon ${isDeposit?'deposit':'withdraw'}">${isDeposit?'+':'-'}</div>
+        <div class="entry-main">
+          <div class="entry-title">${escapeHtml(e.description)}</div>
+          <div class="entry-sub">${fmtDateShort(e.date)}・${escapeHtml(acct?acct.name:'(削除済み口座)')}${e.memo? '・'+escapeHtml(e.memo):''}</div>
+        </div>
+        <div class="entry-amount ${isDeposit?'in':'out'} num">${isDeposit?'+':'-'}${yen(e.amount).slice(1)}</div>
+        <div class="entry-actions">
+          <button class="icon-btn" onclick="openBankForm('${e.id}')"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
+          <button class="icon-btn" onclick="deleteBankEntry('${e.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m-9 0l1 14h8l1-14"/></svg></button>
+        </div>
+      </div>`;
+    }
+  }).join('');
+}
+
+/* ---------- Credit entry form ---------- */
+function categoriesFor(type){
+  return (DB.categories[type] || []);
+}
+
+function openCreditForm(editId){
+  const editing = editId ? DB.creditEntries.find(e=>e.id===editId) : null;
+  const type = editing ? editing.type : 'personal';
+  const state = {
+    date: editing ? editing.date : todayISO(),
+    type: type,
+    cardId: editing ? editing.cardId : (DB.cards.find(c=>c.type===type)||{}).id,
+    amount: editing ? editing.amount : '',
+    mainCategory: editing ? editing.mainCategory : '',
+    subCategory: editing ? editing.subCategory : '',
+    settlementAccountId: editing ? editing.settlementAccountId : (mainAccount()||{}).id,
+    memo: editing ? editing.memo : '',
+  };
+
+  function body(){
+    const cardsOfType = DB.cards.filter(c=>c.type===state.type);
+    const cats = categoriesFor(state.type);
+    const selectedCat = cats.find(c=>c.name===state.mainCategory);
+    const subs = selectedCat ? selectedCat.subs : [];
+
+    return `
+      ${modalHeader(editing ? 'カード明細を編集' : 'カード明細を登録')}
+      <div class="field">
+        <label>利用日<span class="req">*</span></label>
+        <input type="date" id="cf_date" value="${state.date}">
+      </div>
+      <div class="field">
+        <label>区分<span class="req">*</span></label>
+        <div class="segmented">
+          <button type="button" class="${state.type==='personal'?'active':''}" onclick="creditFormSetType('personal')">個人</button>
+          <button type="button" class="${state.type==='household'?'active':''}" onclick="creditFormSetType('household')">家計</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>カード<span class="req">*</span></label>
+        ${cardsOfType.length ? `
+        <div class="chip-group">
+          ${cardsOfType.map(c=>`<button type="button" class="chip ${state.cardId===c.id?'active':''}" onclick="creditFormSetCard('${c.id}')">${escapeHtml(c.name)}</button>`).join('')}
+        </div>` : `<div class="helper-text">この区分のカードが未登録です。設定タブから追加してください。</div>`}
+      </div>
+      <div class="field">
+        <label>金額<span class="req">*</span></label>
+        <input type="number" id="cf_amount" inputmode="numeric" placeholder="0" value="${state.amount}">
+      </div>
+      <div class="field">
+        <label>大カテゴリ<span class="req">*</span></label>
+        ${cats.length ? `
+        <div class="chip-group">
+          ${cats.map(c=>`<button type="button" class="chip ${state.mainCategory===c.name?'active':''}" onclick="creditFormSetMainCat('${escapeHtml(c.name)}')">${escapeHtml(c.name)}</button>`).join('')}
+        </div>` : `<div class="helper-text">この区分のカテゴリが未登録です。設定タブから追加してください。</div>`}
+      </div>
+      ${selectedCat ? `
+      <div class="field">
+        <label>中カテゴリ<span class="req">*</span></label>
+        <div class="chip-group">
+          ${subs.map(s=>`<button type="button" class="chip ${state.subCategory===s.name?'active':''}" onclick="creditFormSetSubCat('${escapeHtml(s.name)}')">${escapeHtml(s.name)}</button>`).join('')}
+          ${subs.length===0?'<div class="helper-text">中カテゴリが未登録です</div>':''}
+        </div>
+      </div>` : ''}
+      <div class="field">
+        <label>引落口座</label>
+        <select id="cf_account">
+          ${DB.accounts.map(a=>`<option value="${a.id}" ${state.settlementAccountId===a.id?'selected':''}>${escapeHtml(a.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>メモ</label>
+        <textarea id="cf_memo">${escapeHtml(state.memo)}</textarea>
+      </div>
+      <div class="form-actions">
+        ${editing ? `<button class="btn btn-ghost" onclick="deleteCreditEntry('${editing.id}')">削除</button>` : ''}
+        <button class="btn btn-primary" onclick="submitCreditForm(${editing? `'${editing.id}'`:'null'})">${editing?'更新する':'登録する'}</button>
+      </div>
+    `;
+  }
+
+  window._creditFormState = state;
+  window.creditFormSetType = (t)=>{
+    state.type = t;
+    const firstCard = DB.cards.find(c=>c.type===t);
+    state.cardId = firstCard ? firstCard.id : null;
+    state.mainCategory=''; state.subCategory='';
+    openModal(body());
+    captureCreditFormInputs();
+  };
+  window.creditFormSetCard = (id)=>{ state.cardId = id; openModal(body()); captureCreditFormInputs(); };
+  window.creditFormSetMainCat = (name)=>{ state.mainCategory = name; state.subCategory=''; openModal(body()); captureCreditFormInputs(); };
+  window.creditFormSetSubCat = (name)=>{ state.subCategory = name; openModal(body()); captureCreditFormInputs(); };
+
+  function captureCreditFormInputs(){
+    // re-attach listeners to persist freeform inputs across re-renders
+    const dateEl = document.getElementById('cf_date');
+    const amtEl = document.getElementById('cf_amount');
+    const acctEl = document.getElementById('cf_account');
+    const memoEl = document.getElementById('cf_memo');
+    if(dateEl) dateEl.value = state.date, dateEl.oninput = ()=>state.date = dateEl.value;
+    if(amtEl) amtEl.value = state.amount, amtEl.oninput = ()=>state.amount = amtEl.value;
+    if(acctEl) acctEl.oninput = ()=>state.settlementAccountId = acctEl.value;
+    if(memoEl) memoEl.oninput = ()=>state.memo = memoEl.value;
+  }
+
+  openModal(body());
+  captureCreditFormInputs();
+}
+
+function submitCreditForm(editId){
+  const s = window._creditFormState;
+  if(!s.date){ showToast('利用日を入力してください'); return; }
+  if(!s.cardId){ showToast('カードを選択してください'); return; }
+  if(!s.amount || Number(s.amount)<=0){ showToast('金額を入力してください'); return; }
+  if(!s.mainCategory){ showToast('大カテゴリを選択してください'); return; }
+  if(!s.subCategory){ showToast('中カテゴリを選択してください'); return; }
+
+  if(editId){
+    const entry = DB.creditEntries.find(e=>e.id===editId);
+    Object.assign(entry, {
+      date:s.date, type:s.type, cardId:s.cardId, amount:Number(s.amount),
+      mainCategory:s.mainCategory, subCategory:s.subCategory,
+      settlementAccountId:s.settlementAccountId, memo:s.memo
+    });
+    showToast('明細を更新しました');
+  }else{
+    DB.creditEntries.push({
+      id: uid('ce'), date:s.date, type:s.type, cardId:s.cardId, amount:Number(s.amount),
+      mainCategory:s.mainCategory, subCategory:s.subCategory,
+      settlementAccountId:s.settlementAccountId, memo:s.memo
+    });
+    showToast('明細を登録しました');
+  }
+  saveData();
+  closeModal();
+  renderHome(); renderSummary();
+}
+
+function deleteCreditEntry(id){
+  askConfirm('この明細を削除しますか？', ()=>{
+    DB.creditEntries = DB.creditEntries.filter(e=>e.id!==id);
+    saveData();
+    closeModal();
+    renderHome(); renderSummary();
+  });
+}
+
+/* ---------- Bank entry form ---------- */
+function openBankForm(editId){
+  const editing = editId ? DB.bankEntries.find(e=>e.id===editId) : null;
+  const state = {
+    date: editing ? editing.date : todayISO(),
+    accountId: editing ? editing.accountId : (mainAccount()||{}).id,
+    transactionType: editing ? editing.transactionType : 'withdraw',
+    amount: editing ? editing.amount : '',
+    description: editing ? editing.description : '',
+    memo: editing ? editing.memo : '',
+  };
+
+  function body(){
+    return `
+      ${modalHeader(editing ? '入出金を編集' : '入出金を登録')}
+      <div class="field">
+        <label>登録日<span class="req">*</span></label>
+        <input type="date" id="bf_date" value="${state.date}">
+      </div>
+      <div class="field">
+        <label>入出金区分<span class="req">*</span></label>
+        <div class="segmented">
+          <button type="button" class="${state.transactionType==='deposit'?'active':''}" onclick="bankFormSetType('deposit')">入金</button>
+          <button type="button" class="${state.transactionType==='withdraw'?'active':''}" onclick="bankFormSetType('withdraw')">出金</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>口座<span class="req">*</span></label>
+        <select id="bf_account">
+          ${DB.accounts.map(a=>`<option value="${a.id}" ${state.accountId===a.id?'selected':''}>${escapeHtml(a.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>金額<span class="req">*</span></label>
+        <input type="number" id="bf_amount" inputmode="numeric" placeholder="0" value="${state.amount}">
+      </div>
+      <div class="field">
+        <label>内容<span class="req">*</span></label>
+        <input type="text" id="bf_description" placeholder="例：給与、現金おろし" value="${escapeHtml(state.description)}">
+      </div>
+      <div class="field">
+        <label>メモ</label>
+        <textarea id="bf_memo">${escapeHtml(state.memo)}</textarea>
+      </div>
+      <div class="form-actions">
+        ${editing ? `<button class="btn btn-ghost" onclick="deleteBankEntry('${editing.id}')">削除</button>` : ''}
+        <button class="btn btn-primary" onclick="submitBankForm(${editing? `'${editing.id}'`:'null'})">${editing?'更新する':'登録する'}</button>
+      </div>
+    `;
+  }
+
+  window._bankFormState = state;
+  window.bankFormSetType = (t)=>{ state.transactionType = t; openModal(body()); captureBankFormInputs(); };
+
+  function captureBankFormInputs(){
+    const dateEl = document.getElementById('bf_date');
+    const acctEl = document.getElementById('bf_account');
+    const amtEl = document.getElementById('bf_amount');
+    const descEl = document.getElementById('bf_description');
+    const memoEl = document.getElementById('bf_memo');
+    if(dateEl) dateEl.oninput = ()=>state.date = dateEl.value;
+    if(acctEl) acctEl.oninput = ()=>state.accountId = acctEl.value;
+    if(amtEl) amtEl.oninput = ()=>state.amount = amtEl.value;
+    if(descEl) descEl.oninput = ()=>state.description = descEl.value;
+    if(memoEl) memoEl.oninput = ()=>state.memo = memoEl.value;
+  }
+
+  openModal(body());
+  captureBankFormInputs();
+}
+
+function submitBankForm(editId){
+  const s = window._bankFormState;
+  if(!s.date){ showToast('登録日を入力してください'); return; }
+  if(!s.accountId){ showToast('口座を選択してください'); return; }
+  if(!s.amount || Number(s.amount)<=0){ showToast('金額を入力してください'); return; }
+  if(!s.description || !s.description.trim()){ showToast('内容を入力してください'); return; }
+
+  const prevEntry = editId ? DB.bankEntries.find(e=>e.id===editId) : null;
+
+  // adjust account balances: reverse previous effect if editing, then apply new
+  if(prevEntry){
+    const prevAcct = findAccount(prevEntry.accountId);
+    if(prevAcct){
+      prevAcct.balance += (prevEntry.transactionType==='deposit' ? -prevEntry.amount : prevEntry.amount);
+    }
+  }
+  const acct = findAccount(s.accountId);
+  if(acct){
+    acct.balance += (s.transactionType==='deposit' ? Number(s.amount) : -Number(s.amount));
+  }
+
+  if(editId){
+    Object.assign(prevEntry, {
+      date:s.date, accountId:s.accountId, transactionType:s.transactionType,
+      amount:Number(s.amount), description:s.description, memo:s.memo
+    });
+    showToast('入出金を更新しました');
+  }else{
+    DB.bankEntries.push({
+      id: uid('be'), date:s.date, accountId:s.accountId, transactionType:s.transactionType,
+      amount:Number(s.amount), description:s.description, memo:s.memo
+    });
+    showToast('入出金を登録しました');
+  }
+  saveData();
+  closeModal();
+  renderHome(); renderSettings(); renderSummary();
+}
+
+function deleteBankEntry(id){
+  askConfirm('この入出金を削除しますか？口座残高も元に戻ります。', ()=>{
+    const entry = DB.bankEntries.find(e=>e.id===id);
+    if(entry){
+      const acct = findAccount(entry.accountId);
+      if(acct){
+        acct.balance += (entry.transactionType==='deposit' ? -entry.amount : entry.amount);
+      }
+    }
+    DB.bankEntries = DB.bankEntries.filter(e=>e.id!==id);
+    saveData();
+    closeModal();
+    renderHome(); renderSettings(); renderSummary();
+  });
+}
+
+/* =========================================================================
+   LARGE EXPENSE TAB (大型出費)
+   ========================================================================= */
+let largeListFilter = 'all'; // all | personal | household
+
+function renderLarge(){
+  const panel = document.getElementById('panel-large');
+  const mk = monthKey(new Date());
+  panel.innerHTML = `
+    <div class="section-label">今月発生予定</div>
+    <div class="card">
+      <div id="largeThisMonth"></div>
+    </div>
+
+    <button class="btn btn-primary btn-block" onclick="openLargeForm()">
+      <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      大型出費を登録
+    </button>
+
+    <div class="section-label">登録済み一覧</div>
+    <div class="card">
+      <div class="filter-row" id="largeFilterRow"></div>
+      <div id="largeList"></div>
+    </div>
+  `;
+  renderLargeThisMonth(mk);
+  renderLargeFilterRow();
+  renderLargeList();
+}
+
+function renderLargeThisMonth(mk){
+  const el = document.getElementById('largeThisMonth');
+  const items = largeExpensesForMonth(mk);
+  if(items.length===0){
+    el.innerHTML = `<div class="empty-state">
+      <div class="et">今月の発生予定はありません</div>
+      <div class="es">${monthLabel(mk)}に発生する大型出費はまだ登録されていません</div>
+    </div>`;
+    return;
+  }
+  const total = items.reduce((s,e)=>s+Number(e.amount||0),0);
+  el.innerHTML = items.map(e=>`
+    <div class="entry">
+      <div class="entry-icon withdraw">大</div>
+      <div class="entry-main">
+        <div class="entry-title">${escapeHtml(e.name)} <span class="tiny-tag ${e.type}">${typeLabel(e.type)}</span></div>
+        <div class="entry-sub">${FREQ_LABEL[e.frequency]}・${escapeHtml(e.mainCategory)}${e.subCategory?'/'+escapeHtml(e.subCategory):''}</div>
+      </div>
+      <div class="entry-amount out num">-${yen(e.amount).slice(1)}</div>
+    </div>
+  `).join('') + `
+    <div class="acct-total-row">
+      <span class="acct-total-label">今月合計</span>
+      <span class="acct-total-value num">${yen(total)}</span>
+    </div>
+  `;
+}
+
+function renderLargeFilterRow(){
+  const el = document.getElementById('largeFilterRow');
+  const filters = [['all','すべて'],['personal','個人'],['household','家計']];
+  el.innerHTML = filters.map(([key,label])=>
+    `<button class="filter-chip ${largeListFilter===key?'active':''}" onclick="setLargeFilter('${key}')">${label}</button>`
+  ).join('');
+}
+function setLargeFilter(key){
+  largeListFilter = key;
+  renderLargeFilterRow();
+  renderLargeList();
+}
+
+function renderLargeList(){
+  const el = document.getElementById('largeList');
+  let items = DB.largeExpenses.slice();
+  if(largeListFilter!=='all') items = items.filter(e=>e.type===largeListFilter);
+  items.sort((a,b)=> a.name.localeCompare(b.name,'ja'));
+  if(items.length===0){
+    el.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" fill="none"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg>
+      <div class="et">登録された大型出費がありません</div>
+      <div class="es">家賃・税金・積立など、繰り返し発生する支出を登録しましょう</div>
+    </div>`;
+    return;
+  }
+  el.innerHTML = items.map(e=>{
+    const acct = findAccount(e.accountId);
+    return `
+    <div class="entry">
+      <div class="entry-icon withdraw">大</div>
+      <div class="entry-main">
+        <div class="entry-title">${escapeHtml(e.name)}
+          <span class="tiny-tag ${e.type}">${typeLabel(e.type)}</span>
+          ${e.active===false ? '<span class="tiny-tag" style="background:#eee;color:#999">停止中</span>' : ''}
+        </div>
+        <div class="entry-sub">${FREQ_LABEL[e.frequency]}・開始${fmtDateShort(e.startDate)}・${escapeHtml(acct?acct.name:'(削除済み)')}</div>
+      </div>
+      <div class="entry-amount out num">${yen(e.amount)}</div>
+      <div class="entry-actions">
+        <button class="icon-btn" onclick="openLargeForm('${e.id}')"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
+        <button class="icon-btn" onclick="deleteLargeExpense('${e.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m-9 0l1 14h8l1-14"/></svg></button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openLargeForm(editId){
+  const editing = editId ? DB.largeExpenses.find(e=>e.id===editId) : null;
+  const type = editing ? editing.type : 'personal';
+  const state = {
+    name: editing ? editing.name : '',
+    amount: editing ? editing.amount : '',
+    startDate: editing ? editing.startDate : todayISO(),
+    frequency: editing ? editing.frequency : 'monthly',
+    type: type,
+    mainCategory: editing ? editing.mainCategory : '',
+    subCategory: editing ? editing.subCategory : '',
+    accountId: editing ? editing.accountId : (mainAccount()||{}).id,
+    memo: editing ? editing.memo : '',
+    active: editing ? (editing.active !== false) : true,
+  };
+
+  function body(){
+    const cats = categoriesFor(state.type);
+    const selectedCat = cats.find(c=>c.name===state.mainCategory);
+    const subs = selectedCat ? selectedCat.subs : [];
+    const freqOptions = [['monthly','毎月'],['bimonthly','2か月ごと'],['quarterly','3か月ごと'],['semiannual','半年ごと'],['annual','年1回']];
+
+    return `
+      ${modalHeader(editing ? '大型出費を編集' : '大型出費を登録')}
+      <div class="field">
+        <label>名称<span class="req">*</span></label>
+        <input type="text" id="lf_name" placeholder="例：家賃、自動車税" value="${escapeHtml(state.name)}">
+      </div>
+      <div class="field">
+        <label>金額<span class="req">*</span></label>
+        <input type="number" id="lf_amount" inputmode="numeric" placeholder="0" value="${state.amount}">
+      </div>
+      <div class="field">
+        <label>開始日<span class="req">*</span></label>
+        <input type="date" id="lf_startDate" value="${state.startDate}">
+      </div>
+      <div class="field">
+        <label>頻度<span class="req">*</span></label>
+        <div class="chip-group">
+          ${freqOptions.map(([k,l])=>`<button type="button" class="chip ${state.frequency===k?'active':''}" onclick="largeFormSetFreq('${k}')">${l}</button>`).join('')}
+        </div>
+      </div>
+      <div class="field">
+        <label>区分<span class="req">*</span></label>
+        <div class="segmented">
+          <button type="button" class="${state.type==='personal'?'active':''}" onclick="largeFormSetType('personal')">個人</button>
+          <button type="button" class="${state.type==='household'?'active':''}" onclick="largeFormSetType('household')">家計</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>大カテゴリ<span class="req">*</span></label>
+        ${cats.length ? `
+        <div class="chip-group">
+          ${cats.map(c=>`<button type="button" class="chip ${state.mainCategory===c.name?'active':''}" onclick="largeFormSetMainCat('${escapeHtml(c.name)}')">${escapeHtml(c.name)}</button>`).join('')}
+        </div>` : `<div class="helper-text">この区分のカテゴリが未登録です。設定タブから追加してください。</div>`}
+      </div>
+      ${selectedCat ? `
+      <div class="field">
+        <label>中カテゴリ<span class="req">*</span></label>
+        <div class="chip-group">
+          ${subs.map(s=>`<button type="button" class="chip ${state.subCategory===s.name?'active':''}" onclick="largeFormSetSubCat('${escapeHtml(s.name)}')">${escapeHtml(s.name)}</button>`).join('')}
+          ${subs.length===0?'<div class="helper-text">中カテゴリが未登録です</div>':''}
+        </div>
+      </div>` : ''}
+      <div class="field">
+        <label>引落口座<span class="req">*</span></label>
+        <select id="lf_account">
+          ${DB.accounts.map(a=>`<option value="${a.id}" ${state.accountId===a.id?'selected':''}>${escapeHtml(a.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>メモ</label>
+        <textarea id="lf_memo">${escapeHtml(state.memo)}</textarea>
+      </div>
+      ${editing ? `
+      <div class="field">
+        <label>状態</label>
+        <div class="segmented">
+          <button type="button" class="${state.active?'active':''}" onclick="largeFormSetActive(true)">有効</button>
+          <button type="button" class="${!state.active?'active':''}" onclick="largeFormSetActive(false)">停止</button>
+        </div>
+      </div>` : ''}
+      <div class="form-actions">
+        ${editing ? `<button class="btn btn-ghost" onclick="deleteLargeExpense('${editing.id}')">削除</button>` : ''}
+        <button class="btn btn-primary" onclick="submitLargeForm(${editing? `'${editing.id}'`:'null'})">${editing?'更新する':'登録する'}</button>
+      </div>
+    `;
+  }
+
+  window._largeFormState = state;
+  window.largeFormSetFreq = (k)=>{ state.frequency=k; openModal(body()); captureLargeFormInputs(); };
+  window.largeFormSetType = (t)=>{ state.type=t; state.mainCategory=''; state.subCategory=''; openModal(body()); captureLargeFormInputs(); };
+  window.largeFormSetMainCat = (n)=>{ state.mainCategory=n; state.subCategory=''; openModal(body()); captureLargeFormInputs(); };
+  window.largeFormSetSubCat = (n)=>{ state.subCategory=n; openModal(body()); captureLargeFormInputs(); };
+  window.largeFormSetActive = (v)=>{ state.active=v; openModal(body()); captureLargeFormInputs(); };
+
+  function captureLargeFormInputs(){
+    const nameEl = document.getElementById('lf_name');
+    const amtEl = document.getElementById('lf_amount');
+    const dateEl = document.getElementById('lf_startDate');
+    const acctEl = document.getElementById('lf_account');
+    const memoEl = document.getElementById('lf_memo');
+    if(nameEl) nameEl.oninput = ()=>state.name = nameEl.value;
+    if(amtEl) amtEl.oninput = ()=>state.amount = amtEl.value;
+    if(dateEl) dateEl.oninput = ()=>state.startDate = dateEl.value;
+    if(acctEl) acctEl.oninput = ()=>state.accountId = acctEl.value;
+    if(memoEl) memoEl.oninput = ()=>state.memo = memoEl.value;
+  }
+
+  openModal(body());
+  captureLargeFormInputs();
+}
+
+function submitLargeForm(editId){
+  const s = window._largeFormState;
+  if(!s.name || !s.name.trim()){ showToast('名称を入力してください'); return; }
+  if(!s.amount || Number(s.amount)<=0){ showToast('金額を入力してください'); return; }
+  if(!s.startDate){ showToast('開始日を入力してください'); return; }
+  if(!s.mainCategory){ showToast('大カテゴリを選択してください'); return; }
+  if(!s.subCategory){ showToast('中カテゴリを選択してください'); return; }
+  if(!s.accountId){ showToast('引落口座を選択してください'); return; }
+
+  if(editId){
+    const exp = DB.largeExpenses.find(e=>e.id===editId);
+    Object.assign(exp, {
+      name:s.name.trim(), amount:Number(s.amount), startDate:s.startDate, frequency:s.frequency,
+      type:s.type, mainCategory:s.mainCategory, subCategory:s.subCategory,
+      accountId:s.accountId, memo:s.memo, active:s.active
+    });
+    showToast('大型出費を更新しました');
+  }else{
+    DB.largeExpenses.push({
+      id: uid('le'), name:s.name.trim(), amount:Number(s.amount), startDate:s.startDate, frequency:s.frequency,
+      type:s.type, mainCategory:s.mainCategory, subCategory:s.subCategory,
+      accountId:s.accountId, memo:s.memo, active:true
+    });
+    showToast('大型出費を登録しました');
+  }
+  saveData();
+  closeModal();
+  renderLarge(); renderHome(); renderSummary();
+}
+
+function deleteLargeExpense(id){
+  askConfirm('この大型出費を削除しますか？', ()=>{
+    DB.largeExpenses = DB.largeExpenses.filter(e=>e.id!==id);
+    saveData();
+    closeModal();
+    renderLarge(); renderHome(); renderSummary();
+  });
+}
+
+/* =========================================================================
+   SUMMARY TAB (サマリ)
+   ========================================================================= */
+const PIE_COLORS = ['#2D6A6A','#D8694F','#B8923A','#3F7D5C','#7A6FB0','#4A90A4','#C45B7C','#8C9A3E','#6B7280','#A85C32'];
+
+function renderSummary(){
+  const panel = document.getElementById('panel-summary');
+  panel.innerHTML = `
+    <div class="month-nav">
+      <button class="mn-btn" onclick="shiftSummaryMonth(-1)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div class="mn-label">${monthLabel(summaryMonth)}</div>
+      <button class="mn-btn" onclick="shiftSummaryMonth(1)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+
+    <div class="section-label">カテゴリ別支出</div>
+    <div class="card">
+      <div id="pieWrap"></div>
+    </div>
+
+    <div class="section-label">月次支出内訳</div>
+    <div class="card">
+      <div id="breakdownTable"></div>
+    </div>
+
+    <div class="section-label">年間サマリ</div>
+    <div class="card" style="overflow-x:auto;">
+      <div id="annualTable"></div>
+    </div>
+  `;
+  renderPie();
+  renderBreakdownTable();
+  renderAnnualTable();
+}
+
+function shiftSummaryMonth(delta){
+  const [y,m] = summaryMonth.split('-').map(Number);
+  const d = new Date(y, m-1+delta, 1);
+  summaryMonth = monthKey(d);
+  renderSummary();
+}
+
+function categoryBreakdownForMonth(mk){
+  const map = {}; // category -> amount
+  creditEntriesForMonth(mk).forEach(e=>{
+    map[e.mainCategory] = (map[e.mainCategory]||0) + Number(e.amount||0);
+  });
+  largeExpensesForMonth(mk).forEach(e=>{
+    map[e.mainCategory] = (map[e.mainCategory]||0) + Number(e.amount||0);
+  });
+  return Object.entries(map).map(([name,amount])=>({name,amount})).sort((a,b)=>b.amount-a.amount);
+}
+
+function renderPie(){
+  const el = document.getElementById('pieWrap');
+  const data = categoryBreakdownForMonth(summaryMonth);
+  const total = data.reduce((s,d)=>s+d.amount,0);
+
+  if(total===0){
+    el.innerHTML = `<div class="empty-state">
+      <div class="et">この月の支出データがありません</div>
+      <div class="es">カード明細や大型出費を登録すると、ここに円グラフが表示されます</div>
+    </div>`;
+    return;
+  }
+
+  let cumulative = 0;
+  const r = 55, cx=60, cy=60;
+  const paths = data.map((d,i)=>{
+    const startAngle = (cumulative/total) * 2*Math.PI - Math.PI/2;
+    cumulative += d.amount;
+    const endAngle = (cumulative/total) * 2*Math.PI - Math.PI/2;
+    const x1 = cx + r*Math.cos(startAngle), y1 = cy + r*Math.sin(startAngle);
+    const x2 = cx + r*Math.cos(endAngle), y2 = cy + r*Math.sin(endAngle);
+    const largeArc = (endAngle-startAngle) > Math.PI ? 1 : 0;
+    const color = PIE_COLORS[i % PIE_COLORS.length];
+    if(data.length===1){
+      return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}"/>`;
+    }
+    return `<path d="M${cx},${cy} L${x1.toFixed(2)},${y1.toFixed(2)} A${r},${r} 0 ${largeArc} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z" fill="${color}"/>`;
+  }).join('');
+
+  const svg = `<svg width="120" height="120" viewBox="0 0 120 120">${paths}<circle cx="${cx}" cy="${cy}" r="28" fill="var(--paper-raised)"/></svg>`;
+
+  const legend = data.map((d,i)=>`
+    <div class="legend-row">
+      <span class="legend-dot" style="background:${PIE_COLORS[i%PIE_COLORS.length]}"></span>
+      <span class="legend-name">${escapeHtml(d.name)}</span>
+      <span class="legend-val num">${yen(d.amount)}</span>
+    </div>
+  `).join('');
+
+  el.innerHTML = `<div class="pie-wrap">
+    <div style="position:relative; flex-shrink:0;">
+      ${svg}
+      <div style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; flex-direction:column;">
+        <div style="font-size:9px; color:var(--ink-soft);">合計</div>
+        <div style="font-size:11px; font-weight:700;" class="num">${yen(total)}</div>
+      </div>
+    </div>
+    <div class="pie-legend">${legend}</div>
+  </div>`;
+}
+
+function renderBreakdownTable(){
+  const el = document.getElementById('breakdownTable');
+  const data = categoryBreakdownForMonth(summaryMonth);
+  if(data.length===0){
+    el.innerHTML = `<div class="empty-state"><div class="es">データがありません</div></div>`;
+    return;
+  }
+  const total = data.reduce((s,d)=>s+d.amount,0);
+  el.innerHTML = `<table class="tbl">
+    <thead><tr><th>カテゴリ</th><th>支出額</th></tr></thead>
+    <tbody>
+      ${data.map(d=>`<tr><td>${escapeHtml(d.name)}</td><td class="num">${yen(d.amount)}</td></tr>`).join('')}
+      <tr class="total-row"><td>合計</td><td class="num">${yen(total)}</td></tr>
+    </tbody>
+  </table>`;
+}
+
+function renderAnnualTable(){
+  const el = document.getElementById('annualTable');
+  const [yearStr] = summaryMonth.split('-');
+  const year = Number(yearStr);
+  const thisMk = monthKey(new Date());
+  let rows = [];
+  let sumCredit=0, sumLarge=0, sumTotal=0;
+  for(let m=1; m<=12; m++){
+    const mk = `${year}-${String(m).padStart(2,'0')}`;
+    const c = creditTotalForMonth(mk);
+    const l = largeTotalForMonth(mk);
+    const t = c+l;
+    sumCredit+=c; sumLarge+=l; sumTotal+=t;
+    rows.push({mk, m, c, l, t});
+  }
+  el.innerHTML = `<table class="tbl">
+    <thead><tr><th>月</th><th>クレカ</th><th>大型出費</th><th>合計支出</th></tr></thead>
+    <tbody>
+      ${rows.map(r=>`
+        <tr class="${r.mk===thisMk?'current-month':''}">
+          <td>${r.m}月</td>
+          <td class="num">${yen(r.c)}</td>
+          <td class="num">${yen(r.l)}</td>
+          <td class="num">${yen(r.t)}</td>
+        </tr>
+      `).join('')}
+      <tr class="total-row">
+        <td>合計</td>
+        <td class="num">${yen(sumCredit)}</td>
+        <td class="num">${yen(sumLarge)}</td>
+        <td class="num">${yen(sumTotal)}</td>
+      </tr>
+    </tbody>
+  </table>`;
+}
+
+/* =========================================================================
+   SETTINGS TAB (設定)
+   ========================================================================= */
+function renderSettings(){
+  const panel = document.getElementById('panel-settings');
+  panel.innerHTML = `
+    <div class="section-label">口座設定</div>
+    <div class="card">
+      <div id="settingsAccountList"></div>
+      <button class="btn btn-secondary btn-block" style="margin-top:12px" onclick="openAccountForm()">+ 口座を追加</button>
+    </div>
+
+    <div class="section-label">クレジットカード設定</div>
+    <div class="card">
+      <div id="settingsCardList"></div>
+      <button class="btn btn-secondary btn-block" style="margin-top:12px" onclick="openCardForm()">+ カードを追加</button>
+    </div>
+
+    <div class="section-label">カテゴリ設定</div>
+    <div class="card">
+      <div class="segmented" style="margin-bottom:14px;">
+        <button class="${catSettingsType==='personal'?'active':''}" onclick="setCatSettingsType('personal')">個人</button>
+        <button class="${catSettingsType==='household'?'active':''}" onclick="setCatSettingsType('household')">家計</button>
+      </div>
+      <div id="settingsCategoryList"></div>
+      <button class="btn btn-secondary btn-block" style="margin-top:8px" onclick="openMainCatForm()">+ 大カテゴリを追加</button>
+    </div>
+
+    <div class="section-label">バックアップ</div>
+    <div class="card">
+      <div id="backupHealthBanner"></div>
+      <div class="helper-text" style="margin-top:0;">アプリ内に自動で変更履歴と週次のスナップショットを保持しています。万が一の操作ミスや表示の乱れがあっても、過去の状態に戻せます。</div>
+      <div class="form-actions" style="margin-top:4px;">
+        <button class="btn btn-primary" style="flex:1" onclick="exportJSON()">
+          <svg width="15" height="15" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 19h16"/></svg>
+          JSONエクスポート
+        </button>
+        <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('importFileInput').click()">JSONインポート</button>
+      </div>
+      <input type="file" id="importFileInput" accept="application/json" style="display:none" onchange="importJSON(event)">
+      <button class="btn btn-ghost btn-block btn-sm" style="margin-top:10px;" onclick="openRestorePanel()">自動バックアップから復元する</button>
+    </div>
+  `;
+  renderSettingsAccounts();
+  renderSettingsCards();
+  renderSettingsCategories();
+  renderBackupHealthBanner();
+}
+
+function renderBackupHealthBanner(){
+  const el = document.getElementById('backupHealthBanner');
+  if(!el) return;
+  const lastExport = getLastExportTime();
+  const exportDays = daysSince(lastExport);
+  const snapshots = getSnapshots();
+  const latestSnap = snapshots[0];
+  const snapDays = latestSnap ? daysSince(latestSnap.t) : null;
+
+  let tone = 'ok'; // ok | warn
+  let msg;
+  if(lastExport===null){
+    tone='warn';
+    msg = 'まだJSONファイルへの書き出し（端末への実保存）が一度もありません。ブラウザのデータが消えると復元できなくなるため、一度エクスポートしておくと安心です。';
+  }else if(exportDays >= 30){
+    tone='warn';
+    msg = `最後のJSONエクスポートから${exportDays}日経っています。そろそろバックアップをおすすめします。`;
+  }else{
+    msg = `最後のJSONエクスポート：${exportDays===0?'今日':exportDays+'日前'}（${fmtDateTime(lastExport)}）`;
+  }
+
+  const snapInfo = latestSnap
+    ? `自動スナップショット：${snapDays===0?'今日':snapDays+'日前'}取得・${snapshots.length}件保持中`
+    : '自動スナップショットはまだありません';
+
+  el.innerHTML = `
+    <div style="background:${tone==='warn'?'var(--coral-tint)':'var(--green-tint)'}; border-radius:10px; padding:12px 13px; margin-bottom:14px;">
+      <div style="display:flex; gap:8px; align-items:flex-start;">
+        <span style="font-size:15px; line-height:1.3;">${tone==='warn'?'⚠️':'✅'}</span>
+        <div style="font-size:12.5px; line-height:1.55; color:var(--ink);">
+          ${escapeHtml(msg)}
+          <div style="color:var(--ink-soft); margin-top:4px;">${escapeHtml(snapInfo)}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- Restore from automatic backup ---------- */
+function openRestorePanel(){
+  const snapshots = getSnapshots();
+  const log = getChangeLog();
+
+  function body(){
+    const snapRows = snapshots.length ? snapshots.map(s=>{
+      const c = s.data ? {
+        accounts: s.data.accounts?.length||0,
+        cards: s.data.cards?.length||0,
+        creditEntries: s.data.creditEntries?.length||0,
+        bankEntries: s.data.bankEntries?.length||0,
+        largeExpenses: s.data.largeExpenses?.length||0,
+      } : {};
+      return `
+      <div class="settings-row">
+        <div class="sr-main">
+          <div class="sr-name">${fmtDateTime(s.t)}</div>
+          <div class="sr-sub">明細 ${ (c.creditEntries||0)+(c.bankEntries||0) }件・大型出費 ${c.largeExpenses||0}件・口座 ${c.accounts||0}件</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="confirmRestoreSnapshot(${s.t})">この時点に復元</button>
+      </div>`;
+    }).join('') : `<div class="empty-state"><div class="es">自動スナップショットはまだありません（週1回、自動的に作成されます）</div></div>`;
+
+    const logRows = log.slice(0,12).map(l=>`
+      <div class="cat-sub-row" style="padding-left:0;">
+        <span>${fmtDateTime(l.t)}</span>
+        <span class="num" style="color:var(--ink-soft);">明細${(l.counts.creditEntries||0)+(l.counts.bankEntries||0)}・大型出費${l.counts.largeExpenses||0}</span>
+      </div>
+    `).join('');
+
+    return `
+      ${modalHeader('自動バックアップから復元')}
+      <div class="helper-text" style="margin-top:0;">週1回、自動的に全データのスナップショットを保存しています（直近${MAX_SNAPSHOTS}件）。誤って削除してしまった場合などに、復元できます。</div>
+      <div class="field"><label>週次スナップショット</label></div>
+      ${snapRows}
+      <div class="field" style="margin-top:18px;"><label>最近の変更履歴（参考）</label></div>
+      ${logRows || '<div class="helper-text">変更履歴はまだありません</div>'}
+      <div class="form-actions">
+        <button class="btn btn-ghost btn-block" onclick="closeModal()">閉じる</button>
+      </div>
+    `;
+  }
+  openModal(body());
+}
+
+function confirmRestoreSnapshot(timestamp){
+  askConfirm(
+    `${fmtDateTime(timestamp)}の状態に復元します。現在のデータは上書きされます。よろしいですか？`,
+    ()=>{
+      const ok = restoreSnapshot(timestamp);
+      closeModal();
+      if(ok){
+        renderAll();
+        showToast('復元しました');
+      }else{
+        showToast('復元に失敗しました');
+      }
+    },
+    { danger:false, confirmLabel:'復元する' }
+  );
+}
+
+/* ---------- Accounts ---------- */
+function renderSettingsAccounts(){
+  const el = document.getElementById('settingsAccountList');
+  if(DB.accounts.length===0){
+    el.innerHTML = `<div class="empty-state"><div class="es">口座がまだありません</div></div>`;
+    return;
+  }
+  el.innerHTML = DB.accounts.map(a=>`
+    <div class="settings-row">
+      <div class="sr-main">
+        <div class="sr-name">${escapeHtml(a.name)} ${a.isMain?'<span class="acct-badge">メイン</span>':''}</div>
+        <div class="sr-sub num">${yen(a.balance)}</div>
+      </div>
+      <div class="entry-actions">
+        <button class="icon-btn" onclick="openAccountForm('${a.id}')"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
+        <button class="icon-btn" onclick="deleteAccount('${a.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m-9 0l1 14h8l1-14"/></svg></button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openAccountForm(editId){
+  const editing = editId ? findAccount(editId) : null;
+  const state = {
+    name: editing ? editing.name : '',
+    balance: editing ? editing.balance : '',
+    isMain: editing ? !!editing.isMain : DB.accounts.length===0,
+  };
+  function body(){
+    return `
+      ${modalHeader(editing?'口座を編集':'口座を追加')}
+      <div class="field"><label>口座名<span class="req">*</span></label>
+        <input type="text" id="af_name" placeholder="例：サブ口座" value="${escapeHtml(state.name)}"></div>
+      <div class="field"><label>残高<span class="req">*</span></label>
+        <input type="number" id="af_balance" inputmode="numeric" placeholder="0" value="${state.balance}"></div>
+      <div class="field">
+        <label>メイン口座に設定</label>
+        <div class="segmented">
+          <button type="button" class="${state.isMain?'active':''}" onclick="acctFormSetMain(true)">はい</button>
+          <button type="button" class="${!state.isMain?'active':''}" onclick="acctFormSetMain(false)">いいえ</button>
+        </div>
+      </div>
+      <div class="form-actions">
+        ${editing ? `<button class="btn btn-ghost" onclick="deleteAccount('${editing.id}')">削除</button>` : ''}
+        <button class="btn btn-primary" onclick="submitAccountForm(${editing?`'${editing.id}'`:'null'})">${editing?'更新する':'追加する'}</button>
+      </div>
+    `;
+  }
+  window._acctFormState = state;
+  window.acctFormSetMain = (v)=>{ state.isMain=v; openModal(body()); captureInputs(); };
+  function captureInputs(){
+    const nameEl = document.getElementById('af_name');
+    const balEl = document.getElementById('af_balance');
+    if(nameEl) nameEl.oninput = ()=>state.name = nameEl.value;
+    if(balEl) balEl.oninput = ()=>state.balance = balEl.value;
+  }
+  openModal(body());
+  captureInputs();
+}
+
+function submitAccountForm(editId){
+  const s = window._acctFormState;
+  if(!s.name || !s.name.trim()){ showToast('口座名を入力してください'); return; }
+  if(s.balance==='' || isNaN(Number(s.balance))){ showToast('残高を入力してください'); return; }
+
+  if(s.isMain){
+    DB.accounts.forEach(a=>a.isMain=false);
+  }
+  if(editId){
+    const a = findAccount(editId);
+    Object.assign(a, {name:s.name.trim(), balance:Number(s.balance), isMain:s.isMain});
+    showToast('口座を更新しました');
+  }else{
+    DB.accounts.push({id:uid('acc'), name:s.name.trim(), balance:Number(s.balance), isMain:s.isMain});
+    showToast('口座を追加しました');
+  }
+  // ensure at least one main account
+  if(!DB.accounts.some(a=>a.isMain) && DB.accounts.length>0) DB.accounts[0].isMain = true;
+  saveData();
+  closeModal();
+  renderSettings(); renderHome();
+}
+
+function deleteAccount(id){
+  const usedByLarge = DB.largeExpenses.some(e=>e.accountId===id);
+  const usedByCredit = DB.creditEntries.some(e=>e.settlementAccountId===id);
+  const usedByBank = DB.bankEntries.some(e=>e.accountId===id);
+  const msg = (usedByLarge || usedByCredit || usedByBank)
+    ? 'この口座は明細で使用されています。削除すると関連明細の口座表示が「削除済み」になります。削除しますか？'
+    : 'この口座を削除しますか？';
+  askConfirm(msg, ()=>{
+    DB.accounts = DB.accounts.filter(a=>a.id!==id);
+    if(!DB.accounts.some(a=>a.isMain) && DB.accounts.length>0) DB.accounts[0].isMain = true;
+    saveData();
+    closeModal();
+    renderSettings(); renderHome();
+  });
+}
+
+/* ---------- Cards ---------- */
+function renderSettingsCards(){
+  const el = document.getElementById('settingsCardList');
+  if(DB.cards.length===0){
+    el.innerHTML = `<div class="empty-state"><div class="es">カードがまだありません</div></div>`;
+    return;
+  }
+  el.innerHTML = DB.cards.map(c=>`
+    <div class="settings-row">
+      <div class="sr-main">
+        <div class="sr-name">${escapeHtml(c.name)} <span class="tiny-tag ${c.type}">${typeLabel(c.type)}</span></div>
+      </div>
+      <div class="entry-actions">
+        <button class="icon-btn" onclick="openCardForm('${c.id}')"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
+        <button class="icon-btn" onclick="deleteCard('${c.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m-9 0l1 14h8l1-14"/></svg></button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openCardForm(editId){
+  const editing = editId ? findCard(editId) : null;
+  const state = { name: editing?editing.name:'', type: editing?editing.type:'personal' };
+  function body(){
+    return `
+      ${modalHeader(editing?'カードを編集':'カードを追加')}
+      <div class="field"><label>カード名<span class="req">*</span></label>
+        <input type="text" id="cdf_name" placeholder="例：楽天カード" value="${escapeHtml(state.name)}"></div>
+      <div class="field"><label>区分<span class="req">*</span></label>
+        <div class="segmented">
+          <button type="button" class="${state.type==='personal'?'active':''}" onclick="cardFormSetType('personal')">個人</button>
+          <button type="button" class="${state.type==='household'?'active':''}" onclick="cardFormSetType('household')">家計</button>
+        </div>
+      </div>
+      <div class="form-actions">
+        ${editing ? `<button class="btn btn-ghost" onclick="deleteCard('${editing.id}')">削除</button>` : ''}
+        <button class="btn btn-primary" onclick="submitCardForm(${editing?`'${editing.id}'`:'null'})">${editing?'更新する':'追加する'}</button>
+      </div>
+    `;
+  }
+  window._cardFormState = state;
+  window.cardFormSetType = (t)=>{ state.type=t; openModal(body()); captureInputs(); };
+  function captureInputs(){
+    const nameEl = document.getElementById('cdf_name');
+    if(nameEl) nameEl.oninput = ()=>state.name = nameEl.value;
+  }
+  openModal(body());
+  captureInputs();
+}
+
+function submitCardForm(editId){
+  const s = window._cardFormState;
+  if(!s.name || !s.name.trim()){ showToast('カード名を入力してください'); return; }
+  if(editId){
+    Object.assign(findCard(editId), {name:s.name.trim(), type:s.type});
+    showToast('カードを更新しました');
+  }else{
+    DB.cards.push({id:uid('card'), name:s.name.trim(), type:s.type});
+    showToast('カードを追加しました');
+  }
+  saveData();
+  closeModal();
+  renderSettings();
+}
+
+function deleteCard(id){
+  askConfirm('このカードを削除しますか？登録済み明細のカード表示が「削除済み」になります。', ()=>{
+    DB.cards = DB.cards.filter(c=>c.id!==id);
+    saveData();
+    closeModal();
+    renderSettings();
+  });
+}
+
+/* ---------- Categories ---------- */
+let catSettingsType = 'personal';
+function setCatSettingsType(t){ catSettingsType = t; renderSettings(); }
+
+function renderSettingsCategories(){
+  const el = document.getElementById('settingsCategoryList');
+  const cats = categoriesFor(catSettingsType);
+  if(cats.length===0){
+    el.innerHTML = `<div class="empty-state"><div class="es">この区分のカテゴリがまだありません</div></div>`;
+    return;
+  }
+  el.innerHTML = cats.map(c=>`
+    <div class="cat-group">
+      <div class="cat-main-row">
+        <span>${escapeHtml(c.name)}</span>
+        <div class="entry-actions">
+          <button class="icon-btn" onclick="openMainCatForm('${c.id}')"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
+          <button class="icon-btn" onclick="deleteMainCat('${c.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m-9 0l1 14h8l1-14"/></svg></button>
+        </div>
+      </div>
+      ${c.subs.map(s=>`
+        <div class="cat-sub-row">
+          <span>└ ${escapeHtml(s.name)}</span>
+          <div class="entry-actions">
+            <button class="icon-btn" onclick="openSubCatForm('${c.id}','${s.id}')"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
+            <button class="icon-btn" onclick="deleteSubCat('${c.id}','${s.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m-9 0l1 14h8l1-14"/></svg></button>
+          </div>
+        </div>
+      `).join('')}
+      <button class="btn btn-ghost btn-sm" style="margin-top:8px;" onclick="openSubCatForm('${c.id}')">+ 中カテゴリを追加</button>
+    </div>
+  `).join('');
+}
+
+function openMainCatForm(catId){
+  const cats = categoriesFor(catSettingsType);
+  const editing = catId ? cats.find(c=>c.id===catId) : null;
+  const state = { name: editing?editing.name:'' };
+  function body(){
+    return `
+      ${modalHeader(editing?'大カテゴリを編集':'大カテゴリを追加')}
+      <div class="field"><label>カテゴリ名<span class="req">*</span></label>
+        <input type="text" id="mc_name" placeholder="例：食費" value="${escapeHtml(state.name)}"></div>
+      <div class="form-actions">
+        ${editing ? `<button class="btn btn-ghost" onclick="deleteMainCat('${editing.id}')">削除</button>` : ''}
+        <button class="btn btn-primary" onclick="submitMainCatForm(${editing?`'${editing.id}'`:'null'})">${editing?'更新する':'追加する'}</button>
+      </div>
+    `;
+  }
+  window._mainCatState = state;
+  const nameEl = ()=>document.getElementById('mc_name');
+  openModal(body());
+  setTimeout(()=>{ const el = nameEl(); if(el) el.oninput = ()=>state.name = el.value; },0);
+}
+
+function submitMainCatForm(catId){
+  const s = window._mainCatState;
+  if(!s.name || !s.name.trim()){ showToast('カテゴリ名を入力してください'); return; }
+  const cats = categoriesFor(catSettingsType);
+  if(catId){
+    const c = cats.find(x=>x.id===catId);
+    c.name = s.name.trim();
+    showToast('大カテゴリを更新しました');
+  }else{
+    cats.push({id:uid('cat'), name:s.name.trim(), subs:[]});
+    showToast('大カテゴリを追加しました');
+  }
+  saveData();
+  closeModal();
+  renderSettings();
+}
+
+function deleteMainCat(catId){
+  askConfirm('この大カテゴリを削除しますか？配下の中カテゴリも削除されます。', ()=>{
+    DB.categories[catSettingsType] = categoriesFor(catSettingsType).filter(c=>c.id!==catId);
+    saveData();
+    closeModal();
+    renderSettings();
+  });
+}
+
+function openSubCatForm(catId, subId){
+  const cats = categoriesFor(catSettingsType);
+  const cat = cats.find(c=>c.id===catId);
+  const editing = subId ? cat.subs.find(s=>s.id===subId) : null;
+  const state = { name: editing?editing.name:'' };
+  function body(){
+    return `
+      ${modalHeader(editing?'中カテゴリを編集':'中カテゴリを追加')}
+      <div class="helper-text" style="margin-top:0;">大カテゴリ「${escapeHtml(cat.name)}」配下</div>
+      <div class="field"><label>カテゴリ名<span class="req">*</span></label>
+        <input type="text" id="sc_name" placeholder="例：外食" value="${escapeHtml(state.name)}"></div>
+      <div class="form-actions">
+        ${editing ? `<button class="btn btn-ghost" onclick="deleteSubCat('${catId}','${editing.id}')">削除</button>` : ''}
+        <button class="btn btn-primary" onclick="submitSubCatForm('${catId}', ${editing?`'${editing.id}'`:'null'})">${editing?'更新する':'追加する'}</button>
+      </div>
+    `;
+  }
+  window._subCatState = state;
+  openModal(body());
+  setTimeout(()=>{ const el = document.getElementById('sc_name'); if(el) el.oninput = ()=>state.name = el.value; },0);
+}
+
+function submitSubCatForm(catId, subId){
+  const s = window._subCatState;
+  if(!s.name || !s.name.trim()){ showToast('カテゴリ名を入力してください'); return; }
+  const cat = categoriesFor(catSettingsType).find(c=>c.id===catId);
+  if(subId){
+    const sub = cat.subs.find(x=>x.id===subId);
+    sub.name = s.name.trim();
+    showToast('中カテゴリを更新しました');
+  }else{
+    cat.subs.push({id:uid('sub'), name:s.name.trim()});
+    showToast('中カテゴリを追加しました');
+  }
+  saveData();
+  closeModal();
+  renderSettings();
+}
+
+function deleteSubCat(catId, subId){
+  askConfirm('この中カテゴリを削除しますか？', ()=>{
+    const cat = categoriesFor(catSettingsType).find(c=>c.id===catId);
+    cat.subs = cat.subs.filter(s=>s.id!==subId);
+    saveData();
+    closeModal();
+    renderSettings();
+  });
+}
+
+/* ---------- JSON export / import ---------- */
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(DB, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  a.href = url;
+  a.download = `pocket-balance-backup-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  markExported();
+  showToast('JSONファイルを書き出しました');
+  if(currentTab==='settings') renderSettings();
+}
+
+function importJSON(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const parsed = JSON.parse(e.target.result);
+      if(!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.accounts)){
+        showToast('ファイル形式が正しくありません');
+        event.target.value = '';
+        return;
+      }
+      askConfirm('現在のデータを上書きしてインポートします。よろしいですか？', ()=>{
+        DB = Object.assign(defaultData(), parsed);
+        saveData();
+        renderAll();
+        showToast('データをインポートしました');
+      }, { danger:false, confirmLabel:'インポートする' });
+      event.target.value = '';
+    }catch(err){
+      console.error(err);
+      showToast('読み込みに失敗しました');
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* =========================================================================
+   INIT
+   ========================================================================= */
+// On load: ensure a changelog entry exists, and take a snapshot if a week
+// has passed since the last one (covers "opened the app but didn't edit
+// anything" weeks too, not just edit-triggered saves).
+if(getChangeLog().length===0) recordChangeLogEntry();
+maybeRunWeeklySnapshot();
+
+renderAll();
+
+// keep topbar shadow state on scroll
+window.addEventListener('scroll', ()=>{
+  document.getElementById('topbar').classList.toggle('scrolled', window.scrollY > 4);
+});
+
+</script>
+</body>
+</html>
