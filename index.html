@@ -1,0 +1,4445 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0">
+<title>Pocket Balance</title>
+
+<!-- iOS Safari: enables "Add to Home Screen" as a standalone app (no Safari UI),
+     sets the status bar style, and gives the home screen icon/title. -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Pocket Balance">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1F4E4E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Crect width='180' height='180' fill='%231F4E4E'/%3E%3Ctext x='90' y='118' font-size='92' font-family='-apple-system,sans-serif' font-weight='700' fill='white' text-anchor='middle'%3E%C2%A5%3C/text%3E%3C/svg%3E">
+
+<style>
+:root{
+  --paper:#FAF8F3;
+  --paper-raised:#FFFFFF;
+  --ink:#23282B;
+  --ink-soft:#6B7280;
+  --line:#E7E2D8;
+  --teal:#2D6A6A;
+  --teal-deep:#1F4E4E;
+  --teal-tint:#E4EEEE;
+  --coral:#D8694F;
+  --coral-tint:#FBE9E3;
+  --gold:#B8923A;
+  --gold-tint:#F6EFDD;
+  --green:#3F7D5C;
+  --green-tint:#E6EFE8;
+  --shadow: 0 1px 2px rgba(35,40,43,0.04), 0 4px 14px rgba(35,40,43,0.06);
+  --radius: 14px;
+  --radius-sm: 10px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-top: env(safe-area-inset-top, 0px);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:-apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  -webkit-font-smoothing:antialiased;
+  overscroll-behavior-y:none;
+}
+
+.num{
+  font-feature-settings:"tnum" 1;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:0.01em;
+}
+
+#app{
+  max-width:560px;
+  margin:0 auto;
+  min-height:100vh;
+  padding-bottom: calc(78px + var(--safe-bottom));
+  position:relative;
+}
+
+/* ===== Top bar ===== */
+.topbar{
+  position:sticky;
+  top:0;
+  z-index:20;
+  background:var(--paper);
+  padding: calc(14px + var(--safe-top)) 18px 10px;
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  border-bottom:1px solid transparent;
+}
+.topbar.scrolled{border-bottom-color:var(--line);}
+.brand{
+  font-size:19px;
+  font-weight:700;
+  letter-spacing:-0.01em;
+  color:var(--ink);
+}
+.brand .dot{color:var(--teal);}
+.topbar-sub{font-size:12px; color:var(--ink-soft);}
+
+/* ===== Tab panels ===== */
+.tab-panel{display:none; padding: 4px 16px 28px;}
+.tab-panel.active{display:block; animation:fadeIn .22s ease;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+/* ===== Bottom nav ===== */
+.tabbar{
+  position:fixed;
+  left:0; right:0; bottom:0;
+  z-index:30;
+  background:rgba(250,248,243,0.92);
+  backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);
+  padding: 8px 6px calc(8px + var(--safe-bottom));
+  display:flex;
+  justify-content:space-around;
+  max-width:560px;
+  margin:0 auto;
+}
+.tab-btn{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:3px;
+  background:none;
+  border:none;
+  color:var(--ink-soft);
+  font-size:11px;
+  font-family:inherit;
+  padding:6px 2px;
+  border-radius:10px;
+  -webkit-tap-highlight-color:transparent;
+}
+.tab-btn svg{width:22px; height:22px; stroke:var(--ink-soft); fill:none; stroke-width:1.7;}
+.tab-btn.active{color:var(--teal-deep);}
+.tab-btn.active svg{stroke:var(--teal-deep);}
+.tab-btn.active{font-weight:600;}
+
+/* ===== Cards / sections ===== */
+.card{
+  background:var(--paper-raised);
+  border-radius:var(--radius);
+  border:1px solid var(--line);
+  box-shadow:var(--shadow);
+  padding:16px;
+  margin-bottom:14px;
+}
+.section-label{
+  font-size:12px;
+  font-weight:700;
+  color:var(--ink-soft);
+  text-transform:uppercase;
+  letter-spacing:0.06em;
+  margin: 22px 2px 8px;
+}
+.section-label:first-child{margin-top:6px;}
+
+/* ===== Hero balance ===== */
+.hero{
+  border-radius:18px;
+  background:linear-gradient(150deg, var(--teal-deep), var(--teal) 75%);
+  color:#fff;
+  padding:20px 18px 18px;
+  margin-bottom:16px;
+  box-shadow: 0 6px 20px rgba(31,78,78,0.25);
+  position:relative;
+  overflow:hidden;
+}
+.hero::after{
+  content:"";
+  position:absolute;
+  right:-40px; top:-40px;
+  width:160px; height:160px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.06);
+}
+.hero-row{display:flex; justify-content:space-between; align-items:flex-end; gap:12px;}
+.hero-label{font-size:12px; opacity:0.78; font-weight:600; letter-spacing:0.03em;}
+.hero-amount{font-size:34px; font-weight:700; line-height:1.1; margin-top:4px;}
+.hero-amount.negative{color:#FFD9CC;}
+.hero-ring{flex-shrink:0;}
+.hero-breakdown{
+  display:flex;
+  flex-wrap:wrap;
+  gap:14px 16px;
+  margin-top:16px;
+  padding-top:14px;
+  border-top:1px solid rgba(255,255,255,0.18);
+}
+.hero-bd-item{flex:1 1 38%; min-width:84px;}
+.hero-bd-label{font-size:10.5px; opacity:0.75;}
+.hero-bd-value{font-size:15px; font-weight:700; margin-top:2px;}
+
+/* ===== Account list ===== */
+.acct-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:10px 0;
+  border-bottom:1px solid var(--line);
+}
+.acct-row:last-child{border-bottom:none;}
+.acct-name-wrap{display:flex; align-items:center; gap:8px;}
+.acct-name{font-size:14.5px; font-weight:600;}
+.acct-badge{
+  font-size:10px; font-weight:700; color:var(--teal-deep);
+  background:var(--teal-tint); padding:2px 6px; border-radius:6px;
+}
+.acct-balance{font-size:15.5px; font-weight:700;}
+.acct-total-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding-top:12px; margin-top:4px; border-top:1px solid var(--line);
+}
+.acct-total-label{font-size:13px; color:var(--ink-soft); font-weight:600;}
+.acct-total-value{font-size:19px; font-weight:700;}
+
+/* ===== Buttons ===== */
+/* スクロール誤タップ防止のため :active はタッチデバイスでは無効化
+   タップ確定時のフィードバックは JS 側で .tap-active クラスを付与する */
+.btn{
+  appearance:none; border:none; cursor:pointer;
+  font-family:inherit;
+  border-radius:12px;
+  padding:13px 16px;
+  font-size:15px;
+  font-weight:600;
+  display:flex; align-items:center; justify-content:center; gap:6px;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  -webkit-user-select:none; user-select:none;
+  transition:transform .08s ease, opacity .15s ease;
+}
+/* デスクトップ（hover可能デバイス）のみ :active を使用 */
+@media (hover: hover) {
+  .btn:active{transform:scale(0.97); opacity:0.9;}
+}
+/* タッチデバイスでは JS が付与する .tap-active クラスでフィードバック */
+.btn.tap-active{transform:scale(0.97); opacity:0.9;}
+.icon-btn.tap-active{opacity:0.6;}
+.filter-chip.tap-active{opacity:0.7;}
+.chip.tap-active{opacity:0.7;}
+.mn-btn.tap-active{opacity:0.6;}
+.btn-primary{background:var(--teal-deep); color:#fff;}
+.btn-secondary{background:var(--teal-tint); color:var(--teal-deep);}
+.btn-coral{background:var(--coral); color:#fff;}
+.btn-ghost{background:transparent; color:var(--ink-soft); border:1px solid var(--line);}
+.btn-block{width:100%;}
+.btn-sm{padding:8px 12px; font-size:13px; border-radius:9px;}
+.fab-row{display:flex; gap:10px; margin-bottom:6px;}
+
+/* ===== Forms ===== */
+.field{margin-bottom:14px;}
+.field label{
+  display:block; font-size:12.5px; font-weight:600; color:var(--ink-soft);
+  margin-bottom:6px;
+}
+.field .req{color:var(--coral); margin-left:2px;}
+input[type=text], input[type=number], input[type=date], select, textarea{
+  width:100%;
+  font-family:inherit;
+  font-size:15.5px;
+  padding:11px 12px;
+  min-height:46px;
+  line-height:1.3;
+  box-sizing:border-box;
+  border-radius:10px;
+  border:1.3px solid var(--line);
+  background:var(--paper);
+  color:var(--ink);
+  -webkit-appearance:none;
+}
+input:focus, select:focus, textarea:focus{
+  outline:none; border-color:var(--teal); background:#fff;
+}
+textarea{resize:vertical; min-height:44px;}
+
+.segmented{
+  display:flex; background:var(--paper); border:1.3px solid var(--line);
+  border-radius:10px; padding:3px; gap:3px;
+}
+.segmented button{
+  flex:1; border:none; background:none; font-family:inherit;
+  padding:9px 4px; border-radius:8px; font-size:14px; font-weight:600;
+  color:var(--ink-soft); cursor:pointer;
+}
+.segmented button.active{background:var(--teal-deep); color:#fff;}
+
+.chip-group{display:flex; flex-wrap:wrap; gap:7px;}
+.chip{
+  border:1.3px solid var(--line); background:var(--paper);
+  border-radius:20px; padding:8px 14px; font-size:13.5px; font-weight:600;
+  color:var(--ink); cursor:pointer; font-family:inherit;
+  touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+}
+.chip.active{background:var(--teal-deep); border-color:var(--teal-deep); color:#fff;}
+.chip.add-new{color:var(--teal-deep); border-style:dashed;}
+
+.form-actions{display:flex; gap:10px; margin-top:18px;}
+.form-actions .btn{flex:1;}
+
+/* ===== List entries ===== */
+
+/* スワイプ式アクション：行をクリップして右のボタン群を隠す */
+.entry-wrap{
+  position:relative;
+  overflow:hidden;
+  border-bottom:1px solid var(--line);
+}
+.entry-wrap:last-child{ border-bottom:none; }
+
+/* スライドするコンテンツ層 */
+.entry{
+  display:flex; align-items:center; gap:12px;
+  padding:12px 0;
+  position:relative;
+  background:var(--paper-raised);
+  /* border-bottom は .entry-wrap が担う */
+  border-bottom:none;
+  will-change:transform;
+  transition:transform .22s cubic-bezier(.25,.8,.25,1);
+  touch-action:pan-y;        /* 縦スクロールは許可、横は JS で制御 */
+  -webkit-tap-highlight-color:transparent;
+  cursor:default;
+}
+
+/* 右に隠れているアクションボタン層 */
+.entry-actions{
+  position:absolute; right:0; top:0; bottom:0;
+  display:flex; align-items:stretch;
+  pointer-events:none; opacity:0;
+  transition:opacity .18s ease;
+}
+.entry-wrap.swiped .entry-actions{
+  pointer-events:auto; opacity:1;
+}
+
+/* 各アクションボタン */
+.entry-action-btn{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:3px; width:60px; border:none; cursor:pointer;
+  font-size:10px; font-weight:700; font-family:inherit;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:manipulation;
+  -webkit-user-select:none; user-select:none;
+  transition:opacity .1s;
+}
+.entry-action-btn:active{ opacity:0.7; }
+.entry-action-btn svg{ width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; }
+.entry-action-btn.act-copy{ background:var(--teal-tint); color:var(--teal-deep); }
+.entry-action-btn.act-edit{ background:#E8EAED; color:#444; }
+.entry-action-btn.act-del{  background:var(--coral); color:#fff; }
+
+/* スワイプ中のヒントとして行を少し暗くする */
+.entry-wrap.swiped .entry{ background:var(--paper); }
+
+.entry-icon{
+  width:36px; height:36px; border-radius:10px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:700;
+}
+.entry-icon svg{ width:18px; height:18px; stroke:currentColor; fill:none; stroke-width:1.8; }
+.entry-icon.credit{background:var(--coral-tint); color:var(--coral);}
+.entry-icon.deposit{background:var(--green-tint); color:var(--green);}
+.entry-icon.withdraw{background:var(--gold-tint); color:var(--gold);}
+.entry-main{flex:1; min-width:0;}
+.entry-title{font-size:14px; font-weight:600; display:flex; gap:6px; align-items:center; flex-wrap:wrap; row-gap:2px;}
+.entry-date{font-size:14px; font-weight:700; color:var(--ink-soft); flex-shrink:0;}
+.entry-sub{font-size:12px; color:var(--ink-soft); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+.entry-amount{font-size:15px; font-weight:700; flex-shrink:0; text-align:right; padding-right:6px;}
+.entry-amount.out{color:var(--coral);}
+.entry-amount.in{color:var(--green);}
+
+/* 設定画面など entry-actions を従来通り inline で使う箇所のための互換クラス */
+.inline-entry-actions{display:flex; gap:4px; flex-shrink:0;}
+.icon-btn{
+  width:30px; height:30px; border-radius:8px; border:none; background:var(--paper);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+  touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none; user-select:none;
+}
+.icon-btn svg{width:15px; height:15px; stroke:var(--ink-soft); fill:none; stroke-width:1.8;}
+
+/* 左端にある「スワイプして操作」ヒント（初回のみ表示） */
+.swipe-hint{
+  font-size:11px; color:var(--ink-soft); text-align:right;
+  padding: 0 2px 8px; opacity:0.7; display:flex; align-items:center; justify-content:flex-end; gap:4px;
+}
+.swipe-hint svg{ width:13px; height:13px; stroke:var(--ink-soft); fill:none; stroke-width:2; }
+
+.tiny-tag{
+  font-size:10px; font-weight:700; padding:1.5px 6px; border-radius:6px;
+}
+.tiny-tag.personal{background:var(--teal-tint); color:var(--teal-deep);}
+.tiny-tag.household{background:var(--gold-tint); color:var(--gold);}
+.tiny-tag.both{background:#ece9fb; color:#6b5ce0;}
+
+.empty-state{
+  text-align:center; padding:34px 12px; color:var(--ink-soft);
+}
+.empty-state svg{width:38px; height:38px; stroke:var(--line); margin-bottom:10px;}
+.empty-state .et{font-size:14px; font-weight:600; color:var(--ink); margin-bottom:3px;}
+.empty-state .es{font-size:12.5px;}
+
+/* ===== Filter row for lists ===== */
+.filter-row{display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; margin-bottom:10px;}
+.filter-row::-webkit-scrollbar{display:none;}
+.filter-chip{
+  white-space:nowrap; border:1.3px solid var(--line); background:var(--paper-raised);
+  border-radius:20px; padding:7px 13px; font-size:12.5px; font-weight:600;
+  color:var(--ink-soft); cursor:pointer; font-family:inherit; flex-shrink:0;
+  touch-action:manipulation; -webkit-tap-highlight-color:transparent;
+}
+.filter-chip.active{background:var(--ink); border-color:var(--ink); color:#fff;}
+
+/* ===== Modal ===== */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(35,40,43,0.42);
+  z-index:100; display:none; align-items:flex-end; justify-content:center;
+  backdrop-filter: blur(2px);
+}
+.modal-overlay.show{display:flex; animation:overlayIn .18s ease;}
+@keyframes overlayIn{from{opacity:0;} to{opacity:1;}}
+.modal-sheet{
+  background:var(--paper);
+  width:100%; max-width:560px;
+  border-radius:20px 20px 0 0;
+  max-height:90vh; overflow-y:auto;
+  padding: 10px 18px calc(24px + var(--safe-bottom));
+  animation:sheetUp .26s cubic-bezier(.2,.9,.3,1);
+}
+@keyframes sheetUp{from{transform:translateY(24px); opacity:0.4;} to{transform:translateY(0); opacity:1;}}
+.modal-handle{
+  width:36px; height:4px; background:var(--line); border-radius:3px; margin:6px auto 14px;
+}
+.modal-header{
+  display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;
+}
+.modal-title{font-size:17px; font-weight:700;}
+.modal-close{
+  width:30px; height:30px; border-radius:50%; border:none; background:var(--line);
+  display:flex; align-items:center; justify-content:center; cursor:pointer;
+}
+.modal-close svg{width:14px; height:14px; stroke:var(--ink-soft); stroke-width:2.2;}
+
+/* ===== Month nav ===== */
+.month-nav{
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:14px;
+}
+.month-nav .mn-btn{
+  width:34px; height:34px; border-radius:50%; border:1.3px solid var(--line);
+  background:var(--paper-raised); display:flex; align-items:center; justify-content:center;
+  cursor:pointer;
+}
+.month-nav .mn-btn svg{width:16px; height:16px; stroke:var(--ink); stroke-width:2;}
+.month-nav .mn-label{font-size:17px; font-weight:700;}
+
+/* ===== Table ===== */
+.tbl{width:100%; border-collapse:collapse; font-size:12.8px;}
+.tbl th{
+  text-align:right; font-weight:700; color:var(--ink-soft); padding:7px 4px;
+  border-bottom:1.3px solid var(--line); font-size:11px; text-transform:uppercase; letter-spacing:0.03em;
+}
+.tbl th:first-child, .tbl td:first-child{text-align:left;}
+.tbl td{text-align:right; padding:9px 4px; border-bottom:1px solid var(--line);}
+.tbl tr.total-row td{font-weight:700; border-top:1.5px solid var(--ink); border-bottom:none; padding-top:11px;}
+.tbl tr.current-month td{background:var(--teal-tint);}
+.tbl td.soft{color:var(--line);}
+
+/* ===== Settings rows ===== */
+.settings-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:13px 0; border-bottom:1px solid var(--line);
+}
+.settings-row:last-child{border-bottom:none;}
+.settings-row .sr-main{flex:1;}
+.settings-row .sr-name{font-size:14.5px; font-weight:600;}
+.settings-row .sr-sub{font-size:12px; color:var(--ink-soft); margin-top:1px;}
+
+.cat-group{margin-bottom:18px;}
+.cat-main-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 0; font-weight:700; font-size:14.5px;
+}
+.cat-sub-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:8px 0 8px 16px; font-size:13.5px; color:var(--ink-soft);
+  border-top:1px solid var(--line);
+}
+
+.helper-text{font-size:12px; color:var(--ink-soft); margin-top:-4px; margin-bottom:14px; line-height:1.5;}
+
+.toast{
+  position:fixed; bottom: calc(94px + var(--safe-bottom)); left:50%;
+  transform:translateX(-50%) translateY(8px);
+  background:var(--ink); color:#fff; font-size:13px; font-weight:600;
+  padding:10px 18px; border-radius:30px; z-index:200; opacity:0;
+  pointer-events:none; transition:all .25s ease; white-space:nowrap;
+  box-shadow:0 6px 18px rgba(0,0,0,0.2);
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+::-webkit-scrollbar{width:0; height:0;}
+
+/* ===== 引落予定一覧 ===== */
+.payment-schedule-item{
+  display:flex; align-items:center; gap:12px;
+  padding:12px 0; border-bottom:1px solid var(--line);
+  cursor:pointer;
+}
+.payment-schedule-item:last-child{border-bottom:none;}
+.payment-schedule-date-col{
+  flex-shrink:0; min-width:64px; text-align:center;
+}
+.payment-schedule-month{
+  font-size:10.5px; color:var(--ink-soft); font-weight:600; letter-spacing:0.02em;
+}
+.payment-schedule-day{
+  font-size:24px; font-weight:700; color:var(--teal-deep); line-height:1.1;
+}
+.payment-schedule-weekday{
+  font-size:10px; color:var(--ink-soft);
+}
+.payment-schedule-divider{
+  width:1px; height:44px; background:var(--line); flex-shrink:0;
+}
+.payment-schedule-main{flex:1; min-width:0;}
+.payment-schedule-card{
+  font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.payment-schedule-account{
+  font-size:12px; color:var(--ink-soft); margin-top:2px;
+}
+.payment-schedule-amount{
+  font-size:16px; font-weight:700; color:var(--coral); flex-shrink:0; text-align:right;
+}
+.payment-schedule-chevron{
+  flex-shrink:0; opacity:0.35;
+}
+
+/* モーダル内 明細一覧 */
+.modal-detail-header{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:10px 0; border-bottom:1.5px solid var(--ink); margin-bottom:2px;
+}
+.modal-detail-summary-row{
+  display:flex; justify-content:space-between; align-items:center;
+  padding:12px 0; border-bottom:1px solid var(--line);
+}
+.modal-detail-summary-row:last-child{border-bottom:none;}
+.modal-detail-entry{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 0; border-bottom:1px solid var(--line);
+}
+.modal-detail-entry:last-child{border-bottom:none;}
+.modal-detail-entry-date{
+  font-size:12px; color:var(--ink-soft); flex-shrink:0; min-width:44px;
+}
+.modal-detail-entry-name{
+  flex:1; font-size:13.5px; font-weight:500; min-width:0;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.modal-detail-entry-amount{
+  font-size:14px; font-weight:700; color:var(--coral); flex-shrink:0;
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="topbar" id="topbar">
+    <div class="brand">Pocket<span class="dot">.</span>Balance</div>
+    <div class="topbar-sub" id="todayLabel"></div>
+  </div>
+
+  <!-- ============ HOME ============ -->
+  <div class="tab-panel active" id="panel-home"></div>
+
+  <!-- ============ LARGE EXPENSE ============ -->
+  <div class="tab-panel" id="panel-large"></div>
+
+  <!-- ============ SUMMARY ============ -->
+  <div class="tab-panel" id="panel-summary"></div>
+
+  <!-- ============ SETTINGS ============ -->
+  <div class="tab-panel" id="panel-settings"></div>
+</div>
+
+<div class="tabbar">
+  <button class="tab-btn active" data-tab="home">
+    <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>
+    ホーム
+  </button>
+  <button class="tab-btn" data-tab="large">
+    <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M8 14h2"/></svg>
+    定期入出金
+  </button>
+  <button class="tab-btn" data-tab="summary">
+    <svg viewBox="0 0 24 24"><path d="M21 12A9 9 0 1112 3"/><path d="M21 12L12 12 12 3"/></svg>
+    サマリ
+  </button>
+  <button class="tab-btn" data-tab="settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 00.3 1.9l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.9-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1-1.6 1.7 1.7 0 00-1.9.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.9 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1 1.7 1.7 0 00-.3-1.9l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.9.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.9-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.9V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z"/></svg>
+    設定
+  </button>
+</div>
+
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-sheet" id="modalSheet"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+/* =========================================================================
+   Pocket Balance — V2-19
+   -------------------------------------------------------------------------
+   本リリースの主な変更：B-03対応（未来日入出金の即時反映問題・案2：本質的修正）
+     - bankEntriesに appliedToBalance フィールドを追加。date<=本日 の入出金
+       のみ登録・編集時に account.balance へ即時反映し、未来日分は反映を
+       保留して12か月予測（realBalanceForMonth / renderMonthlySummaryCard /
+       renderBalanceForecast）にのみ計上する。
+     - 保留中の入出金は、日付到来時にアプリ起動時等の自動キャッチアップ
+       （runDueBankEntriesCatchUp）により自動的に反映される。
+     - 既存データ（旧仕様で既にbalanceへ反映済みの未来日明細）は遡及的に
+       巻き戻さず、appliedToBalance=true として一律補完する（Phase0方針）。
+     - ホーム明細一覧に保留中（未反映）の「予定」バッジを表示。
+   詳細は B-03_未来日入出金_実装計画.md、テストシナリオのB-03・B-16〜B-21を参照。
+   ========================================================================= */
+
+/* =========================================================================
+   DATA LAYER
+   ========================================================================= */
+const STORAGE_KEY = 'pocketBalance.v1';
+
+function uid(prefix){
+  return prefix + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,7);
+}
+function nowISOTime(){ return new Date().toISOString(); }
+function stampNew(obj){
+  const now = nowISOTime();
+  return Object.assign(obj, { createdAt: obj.createdAt || now, updatedAt: now });
+}
+function touchRecord(obj){
+  if(!obj) return obj;
+  const now = nowISOTime();
+  if(!obj.createdAt) obj.createdAt = now;
+  obj.updatedAt = now;
+  return obj;
+}
+function migrateStampedList(list){
+  return (list||[]).map(item=>{
+    if(!item.createdAt) item.createdAt = item.updatedAt || nowISOTime();
+    if(!item.updatedAt) item.updatedAt = item.createdAt;
+    return item;
+  });
+}
+
+function defaultData(){
+  return {
+    accounts: [
+      { id: uid('acc'), name:'メイン口座', balance:700000, isMain:true },
+    ],
+    cards: [
+      { id: uid('card'), name:'楽天カード', type:'personal', closingDay:0, paymentDay:27, hidden:false },
+      { id: uid('card'), name:'家族カード', type:'household', closingDay:0, paymentDay:27, hidden:false },
+    ],
+    creditEntries: [],   // {id, date, type, cardId, amount, settlementAccountId, memo}
+    bankEntries: [],      // {id, date, accountId, transactionType, amount, description, memo}
+    largeExpenses: [],    // 定期入出金 {id, name, transactionType(deposit/withdraw), amount, amountMode(uniform/perMonth), monthlyAmounts, startDate, endDate, frequency, customMonths, type, mainCategory, subCategory, accountId, memo, active}
+    cardSubscriptions: [], // サブスク定期カード明細 {id, name, cardId, type, amount, mainCategory, subCategory, settlementAccountId, dayOfMonth(0=月末/1-28), startDate, endDate, active, memo}
+  };
+}
+
+let DB = loadData();
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultData();
+    const parsed = JSON.parse(raw);
+    // light migration safety: ensure all top-level keys exist
+    const d = defaultData();
+    Object.assign(d, parsed);
+    return migrateData(d);
+  }catch(e){
+    console.error('load failed', e);
+    return defaultData();
+  }
+}
+
+// Backfills fields introduced after the initial data model so older saved
+// data (and imported finance-data.json files) keep working without errors.
+function migrateData(d){
+  d.accounts = migrateStampedList(d.accounts).map(a => Object.assign({ buffer: 0 }, a));
+  d.cards = migrateStampedList((d.cards||[]).map(c=>Object.assign({ closingDay:0, paymentDay:27, hidden:false }, c)));
+  d.creditEntries = migrateStampedList(d.creditEntries).map(e=>{
+    // 締め日/引落日のスナップショットを持たない旧データは、現存するカードの設定で
+    // 一度だけ補完する（カードが既に削除済みの場合は補完できないため従来通り）。
+    if(e.closingDay==null || e.paymentDay==null){
+      const c = (d.cards||[]).find(x=>x.id===e.cardId);
+      if(c){
+        if(e.closingDay==null) e.closingDay = c.closingDay;
+        if(e.paymentDay==null) e.paymentDay = c.paymentDay;
+      }
+    }
+    return e;
+  });
+  d.bankEntries = migrateStampedList(d.bankEntries).map(e=>{
+    // B-03対応：appliedToBalanceを持たない旧データ（このフィールド導入前に作成された
+    // bankEntries、または旧バージョンでエクスポートされたJSON）は、当時の仕様により
+    // 既にaccount.balanceへ反映済みであるため、ここで遡及的に保留状態へ巻き戻すことは
+    // しない。「反映済み」として一律 true を補完し、現状の残高表示を変えない。
+    // 新仕様（date<=本日のみ即時反映、未来日は保留）は、本フィールド導入以降に
+    // 新規登録・編集される入出金からのみ適用される。
+    if(e.appliedToBalance === undefined){
+      e.appliedToBalance = true;
+    }
+    return e;
+  });
+  d.largeExpenses = migrateStampedList((d.largeExpenses||[]).map(e=>Object.assign({
+    transactionType: 'withdraw', // pre-existing entries were all expenses
+    endDate: '',
+    amountMode: 'uniform',
+    customMonths: [],
+    monthlyAmounts: {},
+    cardId: '',   // カード連携（空文字=連携なし）
+  }, e))).map(e=>{
+    // C-15対応：frequency='custom'（任意月指定）なのにcustomMonthsが空配列の
+    // 不正データはoccursInMonth()が常にfalseを返し、永久に発生しない定期入出金
+    // として残り続ける。ユーザーに気付かれないまま放置されるのを防ぐため、
+    // 移行・インポート時に自動的に停止（active=false）し、理由を記録する。
+    if(e.frequency==='custom' && (!e.customMonths || e.customMonths.length===0) && e.active!==false){
+      e.active = false;
+      e._autoDeactivatedReason = '対象月が未設定のため自動停止しました';
+    }
+    return e;
+  });
+  d.cardSubscriptions = migrateStampedList((d.cardSubscriptions||[]).map(e=>Object.assign({
+    dayOfMonth: 1, active: true, endDate: '', memo: '',
+  }, e)));
+  return d;
+}
+
+// E-09対応：保存の成否を呼び出し元が判定できるよう、boolean を返す関数に変更。
+// 既存の呼び出し元（多数）は戻り値を見ていないため影響なし。importJSON()のみ
+// 戻り値を見てロールバック判定を行う。
+// K-04対応：容量超過（QuotaExceededError）の場合、最も古い週次スナップショットを
+// 1件削除して空き容量を確保し、メインデータの保存を1回だけ再試行する
+// （saveSnapshotsList()側の既存リトライと同様の方針）。
+function saveData(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+    recordChangeLogEntry();
+    maybeRunWeeklySnapshot();
+    return true;
+  }catch(e){
+    console.error('save failed', e);
+    const isQuotaError = e && (e.name === 'QuotaExceededError' || e.code === 22);
+    if(isQuotaError && tryFreeStorageSpace()){
+      console.warn('saveData: storage quota exceeded - dropped oldest snapshot and retrying once');
+      try{
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+        recordChangeLogEntry();
+        return true;
+      }catch(e2){
+        console.error('save retry failed', e2);
+      }
+    }
+    showToast('保存に失敗しました（端末の空き容量が不足している可能性があります）');
+    return false;
+  }
+}
+
+// K-04対応：容量超過時の最終手段として、最も古い週次スナップショットを1件削除する。
+// 成功すれば true、削除対象が無い／削除しても失敗する場合は false を返す。
+function tryFreeStorageSpace(){
+  const snapshots = getSnapshots();
+  if(snapshots.length === 0) return false;
+  snapshots.pop(); // 最も古い1件を削除
+  try{
+    localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(snapshots));
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
+/* =========================================================================
+   AUTOMATIC BACKUP LAYER
+   -------------------------------------------------------------------------
+   Browsers do not allow a page to silently write files to disk, so a fully
+   automatic "save to a folder" backup is not possible from inside the app.
+   Instead this keeps two safety nets entirely inside localStorage:
+
+   1. CHANGE LOG  - a lightweight diff-like history. Every saveData() call
+      appends a snapshot of record counts + a timestamp (not the full data,
+      to stay small). Lets us tell *when* something changed and roughly
+      *what* changed, and is the trigger for the weekly snapshot timer.
+
+   2. WEEKLY SNAPSHOTS - a full copy of the entire DB, taken automatically
+      at most once every 7 days (checked on every app load/save), keeping
+      the most recent 8 generations (~2 months of weekly history). These
+      live under their own storage keys so they're never overwritten by
+      normal use of the app.
+
+   Neither of these protects against the browser/OS clearing site data
+   entirely (e.g. "Clear browsing data", switching browsers, low-storage
+   eviction). That can only be protected against by an actual JSON file
+   saved outside the browser - so this layer also tracks the last real
+   export and surfaces a reminder banner if it's gotten stale.
+   ========================================================================= */
+const CHANGELOG_KEY = 'pocketBalance.changelog.v1';
+const SNAPSHOTS_KEY = 'pocketBalance.snapshots.v1';
+const LASTEXPORT_KEY = 'pocketBalance.lastExport.v1';
+const MAX_CHANGELOG = 60;       // keep last 60 change events
+const MAX_SNAPSHOTS = 8;        // keep last 8 weekly snapshots (~2 months)
+const SNAPSHOT_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+
+function recordCounts(){
+  return {
+    accounts: DB.accounts.length,
+    cards: DB.cards.length,
+    creditEntries: DB.creditEntries.length,
+    bankEntries: DB.bankEntries.length,
+    largeExpenses: DB.largeExpenses.length,
+  };
+}
+
+function recordChangeLogEntry(){
+  try{
+    const log = getChangeLog();
+    const prev = log[0];
+    const counts = recordCounts();
+    // skip logging if nothing actually changed in count terms and last entry was <2s ago
+    // (avoids flooding the log from rapid successive saves of the same action)
+    const now = Date.now();
+    if(prev && prev.t && (now - prev.t) < 1500 && JSON.stringify(prev.counts)===JSON.stringify(counts)){
+      return;
+    }
+    log.unshift({ t: now, counts });
+    while(log.length > MAX_CHANGELOG) log.pop();
+    localStorage.setItem(CHANGELOG_KEY, JSON.stringify(log));
+  }catch(e){
+    console.error('changelog write failed', e);
+  }
+}
+
+function getChangeLog(){
+  try{
+    const raw = localStorage.getItem(CHANGELOG_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+
+function getSnapshots(){
+  try{
+    const raw = localStorage.getItem(SNAPSHOTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }catch(e){ return []; }
+}
+
+function saveSnapshotsList(list){
+  try{
+    localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(list));
+  }catch(e){
+    console.error('snapshot write failed', e);
+    // localStorage is likely full - drop the oldest snapshot and retry once
+    if(list.length > 1){
+      list.pop();
+      try{ localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(list)); }catch(e2){ /* give up silently */ }
+    }
+  }
+}
+
+function maybeRunWeeklySnapshot(force){
+  const snapshots = getSnapshots();
+  const latest = snapshots[0];
+  const now = Date.now();
+  if(!force && latest && (now - latest.t) < SNAPSHOT_INTERVAL_MS) return;
+  snapshots.unshift({ t: now, data: JSON.parse(JSON.stringify(DB)) });
+  while(snapshots.length > MAX_SNAPSHOTS) snapshots.pop();
+  saveSnapshotsList(snapshots);
+}
+
+function getLastExportTime(){
+  const v = localStorage.getItem(LASTEXPORT_KEY);
+  return v ? Number(v) : null;
+}
+function markExported(){
+  localStorage.setItem(LASTEXPORT_KEY, String(Date.now()));
+}
+
+function restoreSnapshot(timestamp){
+  const snapshots = getSnapshots();
+  const snap = snapshots.find(s=>s.t===timestamp);
+  if(!snap) return false;
+  DB = migrateData(Object.assign(defaultData(), snap.data));
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(DB));
+  recordChangeLogEntry();
+  return true;
+}
+
+function fmtDateTime(ts){
+  const d = new Date(ts);
+  return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+function daysSince(ts){
+  if(!ts) return null;
+  return Math.floor((Date.now()-ts) / (24*60*60*1000));
+}
+
+/* =========================================================================
+   UTILITIES
+   ========================================================================= */
+function yen(n){
+  const v = Math.round(Number(n)||0);
+  return (v<0 ? '-' : '') + '¥' + Math.abs(v).toLocaleString('ja-JP');
+}
+function yenSigned(n){
+  const v = Math.round(Number(n)||0);
+  return (v>0 ? '+' : '') + yen(v);
+}
+function todayISO(){
+  const d = new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function fmtDateShort(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return `${Number(m)}/${Number(d)}`;
+}
+function monthKey(date){ return date.getFullYear()+'-'+String(date.getMonth()+1).padStart(2,'0'); }
+function isoToMonthKey(iso){ return iso.slice(0,7); }
+function monthLabel(mk){
+  const [y,m] = mk.split('-');
+  return `${y}年${Number(m)}月`;
+}
+function escapeHtml(s){
+  return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function findAccount(id){ return DB.accounts.find(a=>a.id===id); }
+function findCard(id){ return DB.cards.find(c=>c.id===id); }
+function mainAccount(){ return DB.accounts.find(a=>a.isMain) || DB.accounts[0]; }
+function typeLabel(t){ return t==='personal' ? '個人' : (t==='household' ? '家計' : (t==='both' ? '両方' : '家計')); }
+// カードの区分が、指定された明細区分（personal/household）に合致するかを判定する。
+// カードは「両方」区分を持てるため、その場合は常に true を返す。
+function cardMatchesType(card, type){ if(!card) return false; return card.type===type || card.type==='both'; }
+// カードの区分タグHTMLを生成する。「両方」の場合は「個人」「家計」を別タグとして並べて表示する。
+function cardTypeTagsHTML(type){
+  if(type==='both'){
+    return `<span class="tiny-tag personal">個人</span> <span class="tiny-tag household">家計</span>`;
+  }
+  return `<span class="tiny-tag ${type}">${typeLabel(type)}</span>`;
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>t.classList.remove('show'), 1800);
+}
+
+/* ===== large expense occurrence logic ===== */
+const FREQ_MONTHS = { monthly:1, bimonthly:2, quarterly:3, semiannual:6, annual:12 };
+const FREQ_LABEL = { monthly:'毎月', bimonthly:'2か月ごと', quarterly:'3か月ごと', semiannual:'半年ごと', annual:'年1回', custom:'任意月指定', spot:'スポット' };
+
+function cardDayLabel(v){
+  return (v===0||v==null) ? '月末' : v+'日';
+}
+function daysInMonth(y, mIndex0){ return new Date(y, mIndex0+1, 0).getDate(); }
+
+// Section 8: settlement (引落) month for a given card usage date, based on
+// the card's 締め日 (closing day) and 引落日 (payment day, next month after closing).
+// closingDay/paymentDay of 0 means "月末" (end of month).
+function settlementMonthKeyForCard(usageISO, card){
+  if(!card || !usageISO) return isoToMonthKey(usageISO);
+  const d = new Date(usageISO+'T00:00:00');
+  const y = d.getFullYear(), m = d.getMonth(), day = d.getDate();
+  const dim = daysInMonth(y, m);
+  const closingDay = (card.closingDay===0 || card.closingDay==null) ? dim : Math.min(Number(card.closingDay), dim);
+  let closingY = y, closingM = m;
+  if(day > closingDay){
+    closingM += 1;
+    if(closingM > 11){ closingM = 0; closingY += 1; }
+  }
+  let payY = closingY, payM = closingM + 1;
+  if(payM > 11){ payM = 0; payY += 1; }
+  return payY + '-' + String(payM+1).padStart(2,'0');
+}
+
+// 明細単位の引落月計算。明細自身に保存された締め日/引落日のスナップショット
+// (closingDay/paymentDay) を最優先で使う。これにより、カードを削除・編集した
+// 後でも過去の確定済み明細の引落月が遡及的に変わることがない。
+function entrySettlementMonthKey(entry){
+  if(!entry || !entry.date) return '';
+  const card = findCard(entry.cardId);
+  const closingDay = entry.closingDay != null ? entry.closingDay : (card ? card.closingDay : null);
+  const paymentDay = entry.paymentDay != null ? entry.paymentDay : (card ? card.paymentDay : null);
+  if(closingDay == null) return isoToMonthKey(entry.date);
+  return settlementMonthKeyForCard(entry.date, { closingDay, paymentDay });
+}
+function creditEntriesBySettlementMonth(mk){
+  return DB.creditEntries.filter(e => entrySettlementMonthKey(e) === mk);
+}
+function creditSettlementTotalForMonth(mk){
+  return creditEntriesBySettlementMonth(mk).reduce((s,e)=>s+Number(e.amount||0), 0);
+}
+
+// Section 5: amount for a recurring item's occurrence in a given month,
+// supporting both パターンA（均一金額）and パターンB（月別個別金額）.
+function amountForExpenseInMonth(exp, mk){
+  if(exp.amountMode === 'perMonth'){
+    const m = Number(mk.split('-')[1]);
+    const v = exp.monthlyAmounts ? exp.monthlyAmounts[m] ?? exp.monthlyAmounts[String(m)] : null;
+    return Number(v||0);
+  }
+  return Number(exp.amount||0);
+}
+
+// Does this large expense occur within the given month (mk = "YYYY-MM")?
+function occursInMonth(exp, mk){
+  if(exp.active === false) return false;
+  if(!exp.startDate) return false;
+
+  // スポット（単発の大型出費・収入）：開始日（＝発生日）の月にのみ1回だけ発生する。
+  // 終了日や繰り返し間隔は無視する。
+  if(exp.frequency === 'spot'){
+    return isoToMonthKey(exp.startDate) === mk;
+  }
+
+  if(exp.endDate && mk > isoToMonthKey(exp.endDate)) return false;
+  const start = new Date(exp.startDate+'T00:00:00');
+  const [ty, tm] = mk.split('-').map(Number);
+  const startMonths = start.getFullYear()*12 + (start.getMonth());
+  const targetMonths = ty*12 + (tm-1);
+  const diff = targetMonths - startMonths;
+  if(diff < 0) return false;
+
+  if(exp.frequency === 'custom'){
+    return (exp.customMonths||[]).map(Number).includes(tm);
+  }
+  const interval = FREQ_MONTHS[exp.frequency] || 1;
+  return diff % interval === 0;
+}
+
+// All large expenses occurring in month mk, each with computed amount
+function largeExpensesForMonth(mk){
+  return DB.largeExpenses.filter(e=>occursInMonth(e, mk));
+}
+
+function creditEntriesForMonth(mk){
+  return DB.creditEntries.filter(e=>isoToMonthKey(e.date)===mk);
+}
+function bankEntriesForMonth(mk){
+  return DB.bankEntries.filter(e=>isoToMonthKey(e.date)===mk);
+}
+// ---------------------------------------------------------------------
+// B-03対応：未来日入出金の保留管理ヘルパー（V2-19で導入）
+// -----------------------------------------------------------------
+// bankEntries は date<=本日 の場合のみ登録・編集の時点で account.balance へ
+// 即時反映される（submitBankForm・deleteBankEntry・duplicateBankEntryで
+// 適用/取り消しを実施）。date>本日（未来日）の入出金は appliedToBalance=false
+// のまま保留され、account.balance には含めない。保留中の入出金は、日付が
+// 「本日」に到達した時点でアプリ起動時等のキャッチアップ処理
+// （runDueBankEntriesCatchUp）により自動的に反映される。
+//
+// 旧バージョン（〜V2-17）では bankEntries は日付を問わず登録した瞬間に
+// totalBalance() へ反映されており、当時の futureBankNetForMonth() は
+// 「予測計算側での二重計算」を防ぐために削除されていた経緯がある
+// （bankEntriesが既にbalanceに含まれていたため）。
+//
+// 以下の futureBankNetForMonth() は、pendingBankEntries()（＝まだ balance に
+// 含まれていない、保留中の分だけ）を対象にしている点が、当時削除された旧関数
+// との決定的な違いである。旧関数は全 bankEntries を対象にしていたため balance
+// との二重計算になっていたが、新関数は balance に未反映の分だけを補うため
+// 反映済み分との二重計算は発生しない。realBalanceForMonth・
+// renderMonthlySummaryCard・renderBalanceForecast の3か所で予測計算に
+// 組み込まれている（二重計算が過去に発生した箇所のため、変更時は要注意）。
+function isFutureDate(iso){
+  return !!iso && iso > todayISO();
+}
+function pendingBankEntries(){
+  return DB.bankEntries.filter(e => e.appliedToBalance === false);
+}
+// 月mkに発生予定だが、まだ口座残高（account.balance）に未反映の入出金の純額
+// （入金は+、出金は-）。Phase 3でrealBalanceForMonth等の予測計算に組み込む。
+function futureBankNetForMonth(mk){
+  return pendingBankEntries()
+    .filter(e => e.date && isoToMonthKey(e.date) === mk)
+    .reduce((s,e) => s + (e.transactionType==='deposit' ? Number(e.amount||0) : -Number(e.amount||0)), 0);
+}
+
+// ── 口座別12か月予測用ヘルパー（② accountId を予測計算に反映） ─────────────
+// 指定口座に紐づく定期収入・定期支出・クレカ引落・保留入出金を月単位で集計する。
+// summaryTypeFilter（個人/家計フィルタ）は引き続き尊重する。
+function recurringIncomeForAccountInMonth(accountId, mk){
+  return filteredLargeExpenses(largeExpensesForMonth(mk))
+    .filter(e => e.accountId === accountId && (e.transactionType||'withdraw')==='deposit')
+    .reduce((s,e) => s + amountForExpenseInMonth(e, mk), 0);
+}
+function recurringExpenseForAccountInMonth(accountId, mk){
+  return filteredLargeExpenses(largeExpensesForMonth(mk))
+    .filter(e => e.accountId === accountId && (e.transactionType||'withdraw')==='withdraw')
+    .reduce((s,e) => s + amountForExpenseInMonth(e, mk), 0);
+}
+// クレカ引落：明細の settlementAccountId（未設定の場合はメイン口座）を使って振り分ける
+function creditSettlementForAccountInMonth(accountId, mk){
+  return filteredCreditEntries(DB.creditEntries)
+    .filter(e => {
+      const acctId = e.settlementAccountId || (mainAccount()||{}).id;
+      return acctId === accountId && entrySettlementMonthKey(e) === mk;
+    })
+    .reduce((s,e) => s + Number(e.amount||0), 0);
+}
+// 保留中の入出金（appliedToBalance=false）を口座別に集計
+function futureBankNetForAccountInMonth(accountId, mk){
+  return pendingBankEntries()
+    .filter(e => e.accountId === accountId && e.date && isoToMonthKey(e.date) === mk)
+    .reduce((s,e) => s + (e.transactionType==='deposit' ? Number(e.amount||0) : -Number(e.amount||0)), 0);
+}
+
+// 口座指定またはnull（全口座合計）で12か月分の予測データを生成する共通ロジック
+function buildForecastMonths(accountId){
+  const today = new Date();
+  const baseMk = monthKey(today);
+  const months = [];
+  let runningBalance = (accountId === null)
+    ? totalBalance()
+    : Number((findAccount(accountId)||{}).balance || 0);
+
+  for(let i = 0; i < 13; i++){
+    const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+    const mk = monthKey(d);
+    let recurIncome, recurExpense, settlement, pendingBankNet;
+    if(accountId === null){
+      recurIncome    = recurringIncomeTotalForMonthF(mk);
+      recurExpense   = recurringExpenseTotalForMonthF(mk);
+      settlement     = creditSettlementTotalForMonthF(mk);
+      pendingBankNet = futureBankNetForMonth(mk);
+    } else {
+      recurIncome    = recurringIncomeForAccountInMonth(accountId, mk);
+      recurExpense   = recurringExpenseForAccountInMonth(accountId, mk);
+      settlement     = creditSettlementForAccountInMonth(accountId, mk);
+      pendingBankNet = futureBankNetForAccountInMonth(accountId, mk);
+    }
+    const netChange = recurIncome - recurExpense - settlement + pendingBankNet;
+    runningBalance += netChange;
+    months.push({
+      mk,
+      label: `${d.getMonth()+1}月`,
+      yearLabel: i === 0 || d.getMonth() === 0 ? String(d.getFullYear()) : '',
+      endBalance: runningBalance,
+      recurIncome, recurExpense, settlement, pendingBankNet, netChange,
+      isCurrent: mk === baseMk,
+    });
+  }
+  return months;
+}
+// 口座フィルタ切り替え（onclick用グローバル関数）
+function setForecastAccount(accountId){ forecastAccountFilter = accountId; renderBalanceForecast(); }
+// 入出金1件の効果をaccount.balanceへ適用する／取り消す。
+// submitBankForm・deleteBankEntry・duplicateBankEntryから呼び出される（Phase 2）。
+function applyBankEntryEffect(entry){
+  const acct = findAccount(entry.accountId);
+  if(!acct) return;
+  acct.balance += (entry.transactionType==='deposit' ? Number(entry.amount) : -Number(entry.amount));
+}
+function reverseBankEntryEffect(entry){
+  const acct = findAccount(entry.accountId);
+  if(!acct) return;
+  acct.balance += (entry.transactionType==='deposit' ? -Number(entry.amount) : Number(entry.amount));
+}
+// 保留中（appliedToBalance===false）の入出金のうち、日付が本日以前に到達した
+// ものを自動的にaccount.balanceへ反映する。Phase 4でアプリ起動時等から呼び出す。
+function runDueBankEntriesCatchUp(){
+  const today = todayISO();
+  let changed = false;
+  DB.bankEntries.forEach(e=>{
+    if(e.appliedToBalance === false && e.date && e.date <= today){
+      applyBankEntryEffect(e);
+      e.appliedToBalance = true;
+      touchRecord(e);
+      changed = true;
+    }
+  });
+  if(changed) saveData();
+  return changed;
+}
+
+/* =========================================================================
+   定期入出金カード連携：自動creditEntry生成
+   -------------------------------------------------------------------------
+   cardId が設定された withdraw 定期入出金について、startDate〜今月の各月で
+   occursInMonth() が true になる月に creditEntry を自動生成する。
+   既に生成済みの月（largeExpenseId+月キーで重複チェック）はスキップ。
+   ========================================================================= */
+function runLargeExpenseCreditCatchUp(){
+  const todayMk = monthKey(new Date());
+  let changed = false;
+
+  DB.largeExpenses
+    .filter(exp => exp.cardId && (exp.transactionType||'withdraw')==='withdraw' && exp.active!==false)
+    .forEach(exp => {
+      if(!exp.startDate) return;
+      const startMk = isoToMonthKey(exp.startDate);
+      // 終了日がある場合はその月まで、なければ今月まで
+      const endMk = exp.endDate ? isoToMonthKey(exp.endDate) : todayMk;
+      const effectiveLast = endMk < todayMk ? endMk : todayMk;
+
+      // startMk〜effectiveLast の全月を走査
+      let cur = startMk;
+      while(cur <= effectiveLast){
+        if(occursInMonth(exp, cur)){
+          const alreadyExists = DB.creditEntries.some(
+            e => e.largeExpenseId === exp.id && isoToMonthKey(e.date) === cur
+          );
+          if(!alreadyExists){
+            // 日付：startDateの「日」部分を当月にクランプ
+            const [cy, cm] = cur.split('-').map(Number);
+            const startDay = Number(exp.startDate.split('-')[2]);
+            const day = Math.min(startDay, daysInMonth(cy, cm-1));
+            const entryDate = `${cur}-${String(day).padStart(2,'0')}`;
+            const card = findCard(exp.cardId);
+            DB.creditEntries.push(stampNew({
+              id: uid('ce'),
+              date: entryDate,
+              type: exp.type,
+              cardId: exp.cardId,
+              amount: amountForExpenseInMonth(exp, cur),
+              settlementAccountId: exp.accountId,
+              memo: exp.memo || '',
+              largeExpenseId: exp.id,
+              closingDay: card ? card.closingDay : null,
+              paymentDay:  card ? card.paymentDay  : null,
+            }));
+            changed = true;
+          }
+        }
+        // 次月へ
+        const [y, m] = cur.split('-').map(Number);
+        const nm = m === 12 ? 1 : m + 1;
+        const ny = m === 12 ? y + 1 : y;
+        cur = `${ny}-${String(nm).padStart(2,'0')}`;
+      }
+    });
+
+  if(changed) saveData();
+  return changed;
+}
+
+function totalBalance(){
+  return DB.accounts.reduce((s,a)=>s+Number(a.balance||0), 0);
+}
+
+function creditTotalForMonth(mk){
+  return creditEntriesForMonth(mk).reduce((s,e)=>s+Number(e.amount||0), 0);
+}
+function recurringExpenseTotalForMonth(mk){
+  return largeExpensesForMonth(mk)
+    .filter(e=>(e.transactionType||'withdraw')==='withdraw' && !e.cardId)
+    .reduce((s,e)=>s+amountForExpenseInMonth(e, mk), 0);
+}
+function recurringIncomeTotalForMonth(mk){
+  return largeExpensesForMonth(mk)
+    .filter(e=>(e.transactionType||'withdraw')==='deposit')
+    .reduce((s,e)=>s+amountForExpenseInMonth(e, mk), 0);
+}
+function realBalanceForMonth(mk){
+  // B-03対応：通常入出金（bankEntries）のうち date<=本日 のものは登録の時点で
+  // submitBankForm 側により口座残高（totalBalance）へ即時反映済み。一方、
+  // 未来日（date>本日）のものは appliedToBalance=false のまま保留されており
+  // totalBalance() には含まれていない。そのため、ここで足すべきは「未反映の
+  // 保留分のみ」を返す futureBankNetForMonth(mk) であり、反映済み分を二重に
+  // 加算することはない（pendingBankEntries()がappliedToBalance:falseのみを
+  // 対象にしているため）。
+  const settlement = creditSettlementTotalForMonth(mk); // 引落日ベース（section 8）
+  const recurExpense = recurringExpenseTotalForMonth(mk);
+  const recurIncome = recurringIncomeTotalForMonth(mk);
+  const pendingBankNet = futureBankNetForMonth(mk);
+  return totalBalance() - settlement - recurExpense + recurIncome + pendingBankNet;
+}
+
+/* =========================================================================
+   TOUCH / POINTER ACTION SUPPORT
+   -------------------------------------------------------------------------
+   スクロール中の誤タップを完全防止するため、click/touchend には一切依存せず
+   pointerdown → pointermove → pointerup/pointercancel の4種のみで
+   自前タップ判定を行う。
+   判定条件：移動量 8px 以下 かつ 押下時間 500ms 以下 かつ cancel なし
+   ========================================================================= */
+
+// ---- 共通タップハンドラ生成ヘルパー ----------------------------------------
+// 呼び出し元が callback を渡すと、Pointer Events 一式を返す。
+// HTML 属性への埋め込みには使えないため、JS から addEventListener する際に利用。
+function createTapHandler(callback){
+  const TAP_MOVE_THRESHOLD = 8;   // px：これを超えたらスクロールと判定
+  const TAP_TIME_THRESHOLD = 500; // ms：これを超えたら長押しと判定
+  let startX, startY, startTime, cancelled, pointerId, targetEl;
+  return {
+    onpointerdown(e){
+      if(e.button !== undefined && e.button > 0) return;
+      startX    = e.clientX;
+      startY    = e.clientY;
+      startTime = Date.now();
+      cancelled = false;
+      pointerId = e.pointerId;
+      targetEl  = e.currentTarget;
+      if(targetEl) targetEl.classList.add('tap-active');
+    },
+    onpointermove(e){
+      if(e.pointerId !== pointerId) return;
+      const moveX = Math.abs(e.clientX - startX);
+      const moveY = Math.abs(e.clientY - startY);
+      if(moveX > TAP_MOVE_THRESHOLD || moveY > TAP_MOVE_THRESHOLD){
+        cancelled = true;
+        if(targetEl) targetEl.classList.remove('tap-active');
+      }
+    },
+    onpointerup(e){
+      if(e.pointerId !== pointerId) return;
+      if(targetEl) targetEl.classList.remove('tap-active');
+      if(cancelled) return;
+      const elapsed = Date.now() - startTime;
+      if(elapsed > TAP_TIME_THRESHOLD) return;
+      e.preventDefault();
+      callback(e);
+    },
+    onpointercancel(){
+      cancelled = true;
+      if(targetEl) targetEl.classList.remove('tap-active');
+    },
+  };
+}
+
+// ---- data-tap-code 属性ベースの全体ディスパッチャ --------------------------
+// HTML を innerHTML で生成する箇所はすべて onclick="…" 属性で書かれているが、
+// MutationObserver でそれを検知し data-tap-code へ変換した上で
+// Pointer Events で自前タップ判定を行う。
+function installTapActionSupport(){
+  const TAP_MOVE_THRESHOLD = 8;
+  const TAP_TIME_THRESHOLD = 500;
+  const lastRun = new WeakMap();
+
+  // onclick 属性を data-tap-code へ変換し touch-action を設定
+  function convertOnclik(root){
+    (root || document).querySelectorAll('[onclick]').forEach(el=>{
+      const code = el.getAttribute('onclick');
+      if(!code) return;
+      el.setAttribute('data-tap-code', code);
+      el.removeAttribute('onclick');
+      el.style.touchAction = 'manipulation';
+      el.style.userSelect  = 'none';
+      el.style.webkitUserSelect = 'none';
+    });
+  }
+
+  // data-tap-code を実行（重複防止付き）
+  function runAction(el, e){
+    if(!el || el.disabled) return;
+    const now = Date.now();
+    if(now - (lastRun.get(el)||0) < 350) return;
+    lastRun.set(el, now);
+    const code = el.getAttribute('data-tap-code');
+    if(!code) return;
+    e.preventDefault();
+    e.stopPropagation();
+    window.event = e;
+    Function('event', code).call(el, e);
+  }
+
+  // ポインタごとの状態管理（マルチタッチ対応）
+  const pointers = new Map(); // pointerId → {el, startX, startY, startTime, cancelled}
+
+  document.addEventListener('pointerdown', e=>{
+    if(e.button !== undefined && e.button > 0) return;
+    const el = e.target.closest && e.target.closest('[data-tap-code]');
+    if(!el) return;
+    el.classList.add('tap-active');
+    pointers.set(e.pointerId, {
+      el,
+      startX:   e.clientX,
+      startY:   e.clientY,
+      startTime: Date.now(),
+      cancelled: false,
+    });
+  }, true);
+
+  document.addEventListener('pointermove', e=>{
+    const state = pointers.get(e.pointerId);
+    if(!state) return;
+    const dx = Math.abs(e.clientX - state.startX);
+    const dy = Math.abs(e.clientY - state.startY);
+    if(dx > TAP_MOVE_THRESHOLD || dy > TAP_MOVE_THRESHOLD){
+      state.cancelled = true;
+      state.el.classList.remove('tap-active'); // スクロール判定でハイライト解除
+    }
+  }, true);
+
+  document.addEventListener('pointerup', e=>{
+    const state = pointers.get(e.pointerId);
+    pointers.delete(e.pointerId);
+    if(!state) return;
+    state.el.classList.remove('tap-active');
+    if(state.cancelled) return;
+    const elapsed = Date.now() - state.startTime;
+    if(elapsed > TAP_TIME_THRESHOLD) return;
+    runAction(state.el, e);
+  }, true);
+
+  document.addEventListener('pointercancel', e=>{
+    const state = pointers.get(e.pointerId);
+    if(state){
+      state.cancelled = true;
+      state.el.classList.remove('tap-active');
+    }
+    pointers.delete(e.pointerId);
+  }, true);
+
+  // キーボード操作（Enter / Space）は引き続きサポート
+  document.addEventListener('keydown', e=>{
+    if(e.key !== 'Enter' && e.key !== ' ') return;
+    const el = e.target.closest && e.target.closest('[data-tap-code]');
+    if(!el || el.disabled) return;
+    const now = Date.now();
+    if(now - (lastRun.get(el)||0) < 350) return;
+    lastRun.set(el, now);
+    const code = el.getAttribute('data-tap-code');
+    if(!code) return;
+    e.preventDefault();
+    Function('event', code).call(el, e);
+  }, true);
+
+  // 初回変換 + 動的追加要素を監視
+  convertOnclik(document);
+  new MutationObserver(mutations=>{
+    mutations.forEach(m=>m.addedNodes.forEach(node=>{
+      if(node.nodeType === 1) convertOnclik(node);
+    }));
+  }).observe(document.body, { childList:true, subtree:true });
+}
+
+// ---- Pointer Events ベースの addTap ユーティリティ -------------------------
+// addEventListener('click', …) の代替。スクロール誤タップ防止付き。
+function addTap(element, callback){
+  if(!element) return;
+  const h = createTapHandler(callback);
+  element.addEventListener('pointerdown',  h.onpointerdown,  {passive:false});
+  element.addEventListener('pointermove',  h.onpointermove,  {passive:true});
+  element.addEventListener('pointerup',    h.onpointerup,    {passive:false});
+  element.addEventListener('pointercancel',h.onpointercancel,{passive:true});
+  element.style.touchAction = 'manipulation';
+  element.style.userSelect  = 'none';
+  element.style.webkitUserSelect = 'none';
+}
+
+/* =========================================================================
+   SWIPE-TO-REVEAL ACTIONS  （明細行の左スワイプでアクションを表示）
+   -------------------------------------------------------------------------
+   設計方針：
+   ・左スワイプ → アクション開く
+   ・右スワイプ（開いている行のみ） → 閉じる
+   ・縦移動が横移動より先に 8px 超えたらスクロールに委譲してキャンセル
+   ・開いている行以外をタップ → 閉じる
+   ・判定はシンプルに「指を離した時点の累積移動量」だけで決定
+   ========================================================================= */
+function installSwipeActions(){
+  const ACTION_WIDTH   = 180; // px：3ボタン合計
+  const OPEN_THRESHOLD =  40; // px：この距離以上左に動いたら開く
+  const CLOSE_THRESHOLD = 30; // px：この距離以上右に動いたら閉じる
+  const AXIS_LOCK_PX   =  8;  // px：縦か横か確定するまでの猶予
+
+  let activeWrap = null;
+
+  /* 指定した wrap 以外を閉じる */
+  function closeActive(except){
+    if(!activeWrap || activeWrap === except) return;
+    const entry = activeWrap.querySelector('.entry');
+    entry.style.transition = '';
+    entry.style.transform  = '';
+    activeWrap.classList.remove('swiped');
+    activeWrap = null;
+  }
+
+  /* wrap を「開いた」状態にする */
+  function openWrap(wrap){
+    closeActive(wrap);
+    const entry = wrap.querySelector('.entry');
+    entry.style.transition = '';
+    entry.style.transform  = `translateX(-${ACTION_WIDTH}px)`;
+    wrap.classList.add('swiped');
+    activeWrap = wrap;
+  }
+
+  /* wrap を「閉じた」状態にする */
+  function closeWrap(wrap){
+    const entry = wrap.querySelector('.entry');
+    entry.style.transition = '';
+    entry.style.transform  = '';
+    wrap.classList.remove('swiped');
+    if(activeWrap === wrap) activeWrap = null;
+  }
+
+  /* 枠外タップ → 閉じる
+     pointerdown/up 両方を追跡し、移動量が小さい（タップ）かつ
+     .entry-wrap の外で離れた場合のみ閉じる。
+     スクロール後に指が枠外で離れても誤閉じしないよう移動量で判定する。 */
+  let _outerStartX = 0, _outerStartY = 0;
+  document.addEventListener('pointerdown', e=>{
+    _outerStartX = e.clientX;
+    _outerStartY = e.clientY;
+  }, {passive:true, capture:true});
+  document.addEventListener('pointerup', e=>{
+    if(!activeWrap) return;
+    const dx = Math.abs(e.clientX - _outerStartX);
+    const dy = Math.abs(e.clientY - _outerStartY);
+    if(dx > 8 || dy > 8) return; // 動きすぎ＝スクロール、無視
+    if(!e.target.closest('.entry-wrap')) closeActive(null);
+  }, {passive:true, capture:true});
+
+  function attachToWrap(wrap){
+    if(wrap._swipeAttached) return;
+    wrap._swipeAttached = true;
+
+    let pid, startX, startY;
+    let axis   = null;   // null | 'h' | 'v'
+    let moving = false;  // 横ドラッグ確定フラグ
+
+    wrap.addEventListener('pointerdown', e=>{
+      if(e.button > 0) return;
+      if(e.target.closest('.entry-action-btn')) return; // ボタン上は無視
+      pid    = e.pointerId;
+      startX = e.clientX;
+      startY = e.clientY;
+      axis   = null;
+      moving = false;
+    }, {passive:true});
+
+    wrap.addEventListener('pointermove', e=>{
+      if(e.pointerId !== pid || axis === 'v') return;
+
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+
+      /* 軸未確定：どちらに先に動いたかで横/縦を決める */
+      if(axis === null){
+        if(Math.abs(dx) < AXIS_LOCK_PX && Math.abs(dy) < AXIS_LOCK_PX) return;
+        axis = Math.abs(dx) >= Math.abs(dy) ? 'h' : 'v';
+        if(axis === 'v') return; // 縦確定 → スクロールに委譲
+      }
+
+      /* 横確定 */
+      moving = true;
+      const isOpen   = wrap === activeWrap;
+      const baseX    = isOpen ? -ACTION_WIDTH : 0;
+      const clampedX = Math.max(-ACTION_WIDTH, Math.min(0, baseX + dx));
+
+      wrap.querySelector('.entry').style.transition = 'none';
+      wrap.querySelector('.entry').style.transform  = `translateX(${clampedX}px)`;
+    }, {passive:true});
+
+    function onEnd(e){
+      if(e && e.pointerId !== pid) return;
+      wrap.querySelector('.entry').style.transition = ''; // トランジション復帰
+
+      if(!moving){
+        /* タップ（ドラッグなし） */
+        if(wrap === activeWrap){
+          /* 開いている行のコンテンツ部分をタップ → 閉じる */
+          if(!e.target || !e.target.closest('.entry-action-btn')) closeWrap(wrap);
+        } else {
+          /* 別の行をタップ → 開いている行を閉じる */
+          closeActive(null);
+          /* 閉じた後、detail-tap 対象なら詳細モーダルを開く */
+          const entryEl = e.target && e.target.closest('[data-detail-tap]');
+          if(entryEl){
+            const [kind, id] = entryEl.getAttribute('data-detail-tap').split(':');
+            if(kind === 'credit') openCreditEntryDetail(id);
+            else if(kind === 'bank') openBankEntryDetail(id);
+            else if(kind === 'large') openLargeEntryDetail(id);
+          }
+        }
+        return;
+      }
+      moving = false;
+
+      const dx     = e ? (e.clientX - startX) : 0;
+      const isOpen = wrap === activeWrap;
+
+      if(!isOpen && dx <= -OPEN_THRESHOLD){
+        /* 十分左に動いた → 開く */
+        openWrap(wrap);
+      } else if(isOpen && dx >= CLOSE_THRESHOLD){
+        /* 十分右に動いた → 閉じる */
+        closeWrap(wrap);
+      } else if(isOpen){
+        /* 中途半端 → 開いたまま戻す */
+        wrap.querySelector('.entry').style.transform = `translateX(-${ACTION_WIDTH}px)`;
+      } else {
+        /* 中途半端 → 閉じたまま戻す */
+        wrap.querySelector('.entry').style.transform = '';
+      }
+    }
+
+    wrap.addEventListener('pointerup',     onEnd, {passive:true});
+    wrap.addEventListener('pointercancel', e=>{
+      if(e.pointerId !== pid) return;
+      moving = false;
+      /* キャンセル時は元の位置へ戻す */
+      const isOpen = wrap === activeWrap;
+      wrap.querySelector('.entry').style.transition = '';
+      wrap.querySelector('.entry').style.transform  = isOpen ? `translateX(-${ACTION_WIDTH}px)` : '';
+    }, {passive:true});
+  }
+
+  function scan(root){
+    (root||document).querySelectorAll('.entry-wrap').forEach(attachToWrap);
+  }
+  scan();
+  new MutationObserver(mutations=>{
+    mutations.forEach(m=>m.addedNodes.forEach(node=>{
+      if(node.nodeType !== 1) return;
+      if(node.classList && node.classList.contains('entry-wrap')) attachToWrap(node);
+      node.querySelectorAll && node.querySelectorAll('.entry-wrap').forEach(attachToWrap);
+    }));
+  }).observe(document.body, {childList:true, subtree:true});
+}
+
+/* =========================================================================
+   NAVIGATION
+   ========================================================================= */
+let currentTab = 'home';
+let summaryMonth = monthKey(new Date());
+let summaryTypeFilter = 'all'; // all | personal | household
+let forecastAccountFilter = null; // null = 全口座合計 | accountId = 口座別
+let paymentScheduleLimit = 10; // 引落予定一覧の初期表示件数
+
+function switchTab(tab){
+  currentTab = tab;
+  if(tab === 'home' && typeof paymentScheduleLimit !== 'undefined') paymentScheduleLimit = 10;
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  document.querySelector(`.tab-btn[data-tab="${tab}"]`).classList.add('active');
+  renderCurrentTab();
+  document.getElementById('app').scrollIntoView({block:'start'});
+}
+
+function renderCurrentTab(){
+  if(currentTab==='home') renderHome();
+  else if(currentTab==='large') renderLarge();
+  else if(currentTab==='summary') renderSummary();
+  else if(currentTab==='settings') renderSettings();
+}
+
+function renderAll(){
+  renderHome();
+  renderLarge();
+  renderSummary();
+  renderSettings();
+}
+
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  addTap(btn, ()=>switchTab(btn.dataset.tab));
+});
+
+document.getElementById('todayLabel').textContent = (()=>{
+  const d = new Date();
+  return `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}`;
+})();
+
+/* =========================================================================
+   MODAL HELPERS
+   ========================================================================= */
+const modalOverlay = document.getElementById('modalOverlay');
+const modalSheet = document.getElementById('modalSheet');
+
+function openModal(html){
+  const isFreshOpen = !modalOverlay.classList.contains('show'); // 既に開いている同じモーダルの再描画では先頭に戻さない
+  modalSheet.innerHTML = `<div class="modal-handle"></div>` + html;
+  modalOverlay.classList.add('show');
+  if(isFreshOpen) modalSheet.scrollTop = 0;
+}
+function closeModal(){
+  modalOverlay.classList.remove('show');
+  modalSheet.innerHTML = '';
+}
+addTap(modalOverlay, (e)=>{
+  if(e.target === modalOverlay) closeModal();
+});
+
+function modalHeader(title){
+  return `<div class="modal-header">
+    <div class="modal-title">${escapeHtml(title)}</div>
+    <button class="modal-close" onclick="closeModal()"><svg viewBox="0 0 24 24"><path d="M5 5l14 14M19 5L5 19" stroke-linecap="round"/></svg></button>
+  </div>`;
+}
+
+/* ===== Custom confirm dialog (iOS Safari can block/ignore window.confirm,
+   especially in standalone/home-screen mode, which silently no-ops delete
+   actions). This renders an in-app sheet instead and always works the same
+   way across iOS, Android, and desktop. ===== */
+const confirmOverlay = document.createElement('div');
+confirmOverlay.className = 'modal-overlay';
+confirmOverlay.id = 'confirmOverlay';
+confirmOverlay.innerHTML = `<div class="modal-sheet" id="confirmSheet" style="border-radius:20px; max-width:420px; margin:0 16px 16px;"></div>`;
+document.body.appendChild(confirmOverlay);
+
+function askConfirm(message, onConfirm, opts){
+  opts = opts || {};
+  const danger = opts.danger !== false; // default true (red confirm button, since most confirms here are deletes)
+  const confirmLabel = opts.confirmLabel || '削除する';
+  const cancelLabel = opts.cancelLabel || 'キャンセル';
+  const sheet = document.getElementById('confirmSheet');
+  sheet.innerHTML = `
+    <div style="padding:22px 20px 18px; text-align:center;">
+      <div style="font-size:15px; line-height:1.6; color:var(--ink); margin-bottom:18px;">${escapeHtml(message)}</div>
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        <button class="btn ${danger?'btn-coral':'btn-primary'} btn-block" id="confirmYesBtn">${escapeHtml(confirmLabel)}</button>
+        <button class="btn btn-ghost btn-block" id="confirmNoBtn">${escapeHtml(cancelLabel)}</button>
+      </div>
+    </div>
+  `;
+  confirmOverlay.classList.add('show');
+  const cleanup = ()=>{ confirmOverlay.classList.remove('show'); sheet.innerHTML=''; };
+  addTap(document.getElementById('confirmYesBtn'), ()=>{ cleanup(); onConfirm(); });
+  addTap(document.getElementById('confirmNoBtn'), cleanup);
+}
+addTap(confirmOverlay, (e)=>{
+  if(e.target === confirmOverlay){
+    confirmOverlay.classList.remove('show');
+    document.getElementById('confirmSheet').innerHTML = '';
+  }
+});
+
+/* =========================================================================
+   PAYMENT SCHEDULE (引落予定一覧)
+   -------------------------------------------------------------------------
+   カードの締日・引落日から「引落予定日」を計算し、
+   その引落予定日ごとにカード明細を集約する。
+   ========================================================================= */
+
+const WEEKDAY_JA = ['日','月','火','水','木','金','土'];
+
+/**
+ * 土日の場合は翌月曜日にずらす（祝日は非対応・注記あり）。
+ */
+function toNextBusinessDay(dateISO){
+  const d = new Date(dateISO + 'T00:00:00');
+  const dow = d.getDay(); // 0=日, 6=土
+  if(dow === 6) d.setDate(d.getDate() + 2); // 土→月
+  else if(dow === 0) d.setDate(d.getDate() + 1); // 日→月
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+/**
+ * カードの引落日（paymentDay）から実際の引落日ISOを返す。
+ * paymentDay===0 は月末。土日は翌月曜にずらす（祝日は非対応）。
+ */
+function paymentDateISO(year, month0, paymentDay){
+  if(paymentDay===0 || paymentDay==null){
+    // 月末
+    const iso = new Date(year, month0+1, 0).toISOString().slice(0,10);
+    return toNextBusinessDay(iso);
+  }
+  const maxDay = daysInMonth(year, month0);
+  const day = Math.min(paymentDay, maxDay);
+  const iso = `${year}-${String(month0+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  return toNextBusinessDay(iso);
+}
+
+/**
+ * settlementMonthKeyForCard から引落月キー→引落日ISOを求める。
+ */
+function paymentDateISOForCard(settlementMK, card){
+  const [y, m] = settlementMK.split('-').map(Number);
+  return paymentDateISO(y, m-1, card ? card.paymentDay : 27);
+}
+
+/**
+ * 本日以降の引落予定を { paymentISO, card, account, amount, entries[] }[] で返す。
+ * 引落日昇順でソート済み。同一カード×同一引落日でグループ化する。
+ */
+function buildPaymentSchedule(){
+  const today = todayISO();
+  const map = new Map(); // key: "paymentISO::cardId"
+
+  DB.creditEntries.forEach(entry=>{
+    const card = findCard(entry.cardId);
+    const smk = entrySettlementMonthKey(entry);
+    const paymentDay = entry.paymentDay != null ? entry.paymentDay : (card ? card.paymentDay : 27);
+    const payISO = paymentDateISOForCard(smk, { paymentDay });
+
+    // 過去の引落は除外
+    if(payISO < today) return;
+
+    const key = `${payISO}::${entry.cardId||'_unknown'}`;
+    if(!map.has(key)){
+      // 引落口座：明細に settlementAccountId があればそれを優先
+      const acctId = entry.settlementAccountId || (mainAccount()||{}).id;
+      map.set(key, {
+        paymentISO: payISO,
+        cardId: entry.cardId,
+        card: card,
+        accountId: acctId,
+        account: findAccount(acctId),
+        amount: 0,
+        entries: [],
+      });
+    }
+    const group = map.get(key);
+    group.amount += Number(entry.amount||0);
+    group.entries.push(entry);
+  });
+
+  // entries を利用日降順にソート
+  map.forEach(g=>{
+    g.entries.sort((a,b)=>b.date.localeCompare(a.date));
+  });
+
+  return Array.from(map.values()).sort((a,b)=>a.paymentISO.localeCompare(b.paymentISO));
+}
+
+/* =========================================================================
+   口座別キャッシュフロー予測（A-1 / A-2）
+   ========================================================================= */
+
+/**
+ * 指定口座の今後90日間のイベント一覧を返す（日付昇順）。
+ * カード引落 + 定期入出金（largeExpenses）を統合。
+ */
+function buildAccountEvents(accountId) {
+  const today = todayISO();
+  const d90 = new Date();
+  d90.setDate(d90.getDate() + 90);
+  const limitISO = d90.toISOString().slice(0, 10);
+
+  const events = [];
+
+  // ── カード引落 ──
+  const cardMap = new Map(); // key: "paymentISO::cardId"
+  DB.creditEntries.forEach(entry => {
+    const card = findCard(entry.cardId);
+    const smk = entrySettlementMonthKey(entry);
+    const paymentDay = entry.paymentDay != null ? entry.paymentDay : (card ? card.paymentDay : 27);
+    const payISO = paymentDateISOForCard(smk, { paymentDay });
+
+    if (payISO < today || payISO > limitISO) return;
+
+    // 引落口座の確定
+    const acctId = entry.settlementAccountId || (mainAccount() || {}).id;
+    if (acctId !== accountId) return;
+
+    const key = `${payISO}::${entry.cardId || '_unknown'}`;
+    if (!cardMap.has(key)) {
+      cardMap.set(key, {
+        date: payISO,
+        label: (card ? card.name : '(削除済みカード)') + '引落',
+        type: 'card',
+        amount: 0,
+        sourceId: entry.cardId || '_unknown',
+      });
+    }
+    cardMap.get(key).amount -= Number(entry.amount || 0);
+  });
+  cardMap.forEach(ev => events.push(ev));
+
+  // ── 定期入出金（largeExpenses）──
+  // 今日から90日先まで月単位で走査
+  const seen = new Set();
+  let cur = new Date();
+  const end90 = new Date(); end90.setDate(end90.getDate() + 90);
+  while (cur <= end90) {
+    const mk = monthKey(cur);
+    if (!seen.has(mk)) {
+      seen.add(mk);
+      DB.largeExpenses.forEach(exp => {
+        if (exp.accountId !== accountId) return;
+        if (!occursInMonth(exp, mk)) return;
+        if (exp.cardId) return; // カード連携済み：creditEntry側で引落として計上済み
+
+        // 発生日ISO（startDate の「日」部分を使う）
+        const startDay = exp.startDate ? Number(exp.startDate.split('-')[2]) : 1;
+        const [y, m] = mk.split('-').map(Number);
+        const maxD = daysInMonth(y, m - 1);
+        const day = Math.min(startDay, maxD);
+        const dateISO = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+        if (dateISO < today || dateISO > limitISO) return;
+
+        const isIncome = exp.transactionType === 'deposit';
+        const rawAmount = amountForExpenseInMonth(exp, mk);
+        events.push({
+          date: dateISO,
+          label: exp.name || (isIncome ? '定期収入' : '定期支出'),
+          type: isIncome ? 'income' : 'expense',
+          amount: isIncome ? rawAmount : -rawAmount,
+          sourceId: exp.id,
+        });
+      });
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  events.sort((a, b) => a.date.localeCompare(b.date));
+  return events;
+}
+
+/**
+ * 指定口座のキャッシュフロー計算結果を返す。
+ * { events, minBalance, minDate, status }
+ */
+function computeAccountCashflow(accountId) {
+  const acct = findAccount(accountId);
+  if (!acct) return { events: [], minBalance: 0, minDate: null, status: 'safe' };
+
+  const events = buildAccountEvents(accountId);
+  const buffer = Number(acct.buffer || 0);
+
+  let running = Number(acct.balance || 0);
+  let minBalance = running;
+  let minDate = null;
+
+  events.forEach(ev => {
+    running += ev.amount;
+    ev.runningBalance = running;
+    if (running < minBalance) {
+      minBalance = running;
+      minDate = ev.date;
+    }
+  });
+
+  let status;
+  if (minBalance < 0) {
+    status = 'shortfall';
+  } else if (minBalance < buffer) {
+    status = 'caution';
+  } else {
+    status = 'safe';
+  }
+
+  return { events, minBalance, minDate, status };
+}
+
+function renderPaymentScheduleBox(){
+  const el = document.getElementById('paymentScheduleList');
+  const moreWrap = document.getElementById('paymentScheduleMore');
+  if(!el) return;
+
+  const items = buildPaymentSchedule();
+
+  if(items.length===0){
+    el.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" fill="none"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <div class="et">引落予定はありません</div>
+      <div class="es">カード明細を登録すると自動で表示されます</div>
+    </div>`;
+    if(moreWrap) moreWrap.innerHTML = '';
+    return;
+  }
+
+  const shown = items.slice(0, paymentScheduleLimit);
+  el.innerHTML = shown.map((item, idx)=>{
+    const d = new Date(item.paymentISO+'T00:00:00');
+    const mStr = `${d.getMonth()+1}月`;
+    const dayStr = d.getDate();
+    const wStr = WEEKDAY_JA[d.getDay()];
+    const cardName = item.card ? item.card.name : '(削除済みカード)';
+    const acctName = item.account ? item.account.name : '(不明な口座)';
+    return `<div class="payment-schedule-item" onclick="openPaymentScheduleModal(${idx})">
+      <div class="payment-schedule-date-col">
+        <div class="payment-schedule-month">${escapeHtml(mStr)}</div>
+        <div class="payment-schedule-day num">${dayStr}</div>
+        <div class="payment-schedule-weekday">${wStr}曜</div>
+      </div>
+      <div class="payment-schedule-divider"></div>
+      <div class="payment-schedule-main">
+        <div class="payment-schedule-card">${escapeHtml(cardName)}</div>
+        <div class="payment-schedule-account">${escapeHtml(acctName)}</div>
+      </div>
+      <div class="payment-schedule-amount num">${yen(item.amount)}</div>
+      <div class="payment-schedule-chevron">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 18l6-6-6-6" stroke-linecap="round"/></svg>
+      </div>
+    </div>`;
+  }).join('');
+
+  // 「もっと見る」ボタン
+  const remaining = items.length - shown.length;
+  if(moreWrap){
+    moreWrap.innerHTML = remaining > 0
+      ? `<button class="btn btn-ghost btn-block" style="margin-top:10px;" onclick="loadMorePaymentSchedule()">もっと見る（残り${remaining}件）</button>`
+      : '';
+  }
+
+  // グローバルにキャッシュ（モーダルでインデックス参照するため）
+  window._paymentScheduleItems = items;
+}
+
+function loadMorePaymentSchedule(){
+  paymentScheduleLimit += 10;
+  renderPaymentScheduleBox();
+}
+
+function openPaymentScheduleModal(idx){
+  const items = window._paymentScheduleItems || buildPaymentSchedule();
+  const item = items[idx];
+  if(!item) return;
+
+  const d = new Date(item.paymentISO+'T00:00:00');
+  const payDateStr = `${d.getFullYear()}/${d.getMonth()+1}/${d.getDate()}（${WEEKDAY_JA[d.getDay()]}）`;
+  const cardName = item.card ? item.card.name : '(削除済みカード)';
+  const acctName = item.account ? item.account.name : '(不明な口座)';
+
+  const entriesHTML = item.entries.length === 0
+    ? `<div class="empty-state"><div class="es">明細がありません</div></div>`
+    : item.entries.map(e=>`
+      <div class="modal-detail-entry">
+        <div class="modal-detail-entry-date">${fmtDateShort(e.date)}</div>
+        <div class="modal-detail-entry-name">${e.memo ? escapeHtml(e.memo) : '—'}</div>
+        <div class="modal-detail-entry-amount num">${yen(e.amount)}</div>
+      </div>
+    `).join('');
+
+  openModal(`
+    ${modalHeader('引落予定の詳細')}
+    <div class="modal-detail-summary-row">
+      <span style="font-size:13px; color:var(--ink-soft); font-weight:600;">カード</span>
+      <span style="font-size:15px; font-weight:700;">${escapeHtml(cardName)}</span>
+    </div>
+    <div class="modal-detail-summary-row">
+      <span style="font-size:13px; color:var(--ink-soft); font-weight:600;">引落口座</span>
+      <span style="font-size:15px; font-weight:700;">${escapeHtml(acctName)}</span>
+    </div>
+    <div class="modal-detail-summary-row">
+      <span style="font-size:13px; color:var(--ink-soft); font-weight:600;">引落日</span>
+      <span style="font-size:15px; font-weight:700;">${escapeHtml(payDateStr)}</span>
+    </div>
+    <div class="modal-detail-summary-row" style="border-bottom:none;">
+      <span style="font-size:13px; color:var(--ink-soft); font-weight:600;">引落予定額</span>
+      <span style="font-size:18px; font-weight:700; color:var(--coral);" class="num">${yen(item.amount)}</span>
+    </div>
+    <div style="margin-top:16px; padding-top:12px; border-top:1.5px solid var(--line);">
+      <div style="font-size:12px; font-weight:700; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px;">対象明細 (${item.entries.length}件)</div>
+      ${entriesHTML}
+    </div>
+  `);
+}
+
+/* =========================================================================
+   HOME TAB
+   ========================================================================= */
+let homeListFilter = 'all'; // all | credit | bank
+let homeMonthFilter = 'all'; // 'all' または 'YYYY-MM'。デフォルトはすべての月を表示
+let homeSearchKeyword = '';
+let homeDisplayLimit = 50; // 初期表示件数。「もっと見る」タップで+50
+
+/* =========================================================================
+   口座の資金繰りセクション（A-5）
+   ========================================================================= */
+function renderAccountCashflow() {
+  if (DB.accounts.length === 0) return '';
+
+  const results = DB.accounts.map(a => ({
+    acct: a,
+    cf: computeAccountCashflow(a.id),
+  }));
+
+  const allSafe = results.every(r => r.cf.status === 'safe');
+
+  if (allSafe) {
+    return `
+      <div class="section-label">口座の資金繰り</div>
+      <div id="accountCashflowSection" class="card" style="padding:12px 14px; display:flex; align-items:center; gap:10px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>
+        <span style="font-size:13px; color:var(--ink-soft);">すべての口座で残高に余裕があります</span>
+      </div>
+    `;
+  }
+
+  const STATUS_STYLE = {
+    safe:      { border: 'var(--teal)',  badge: 'background:var(--teal);  color:#fff', label: '余裕あり' },
+    caution:   { border: 'var(--gold)',  badge: 'background:var(--gold);  color:#fff', label: '注意'     },
+    shortfall: { border: 'var(--coral)', badge: 'background:var(--coral); color:#fff', label: '残高不足' },
+  };
+
+  const cardsHTML = results.map(({ acct, cf }) => {
+    const st = STATUS_STYLE[cf.status] || STATUS_STYLE.safe;
+    const hasEvents = cf.events.length > 0;
+    const minInfo = hasEvents && cf.minDate
+      ? `<div style="font-size:12px; color:var(--ink-soft); margin-top:4px;">最低予測残高 <span class="num" style="color:${cf.minBalance < 0 ? 'var(--coral)' : 'inherit'}">${yen(cf.minBalance)}</span>（${fmtDateShort(cf.minDate)}時点）</div>`
+      : '';
+    return `
+      <div style="border-left:3.5px solid ${st.border}; padding:10px 12px; background:var(--bg-card); border-radius:0 10px 10px 0; margin-bottom:8px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+          <div style="display:flex; align-items:center; gap:8px; flex:1; min-width:0;">
+            <span style="font-size:13.5px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(acct.name)}</span>
+            <span style="font-size:10px; font-weight:700; padding:2px 7px; border-radius:99px; white-space:nowrap; ${st.badge}">${st.label}</span>
+          </div>
+          <span class="num" style="font-size:14px; font-weight:700; white-space:nowrap;">${yen(acct.balance)}</span>
+        </div>
+        ${minInfo}
+      </div>
+    `;
+  }).join('');
+
+  return `
+    <div class="section-label">口座の資金繰り</div>
+    <div id="accountCashflowSection" class="card" style="padding:10px 12px;">
+      ${cardsHTML}
+    </div>
+  `;
+}
+
+function renderHome(){
+  const mk = monthKey(new Date());
+  const total = totalBalance();
+  const usageTotal = creditTotalForMonth(mk);                 // 当月利用額（利用日ベース）
+  const settlementTotal = creditSettlementTotalForMonth(mk); // 当月引落予定額
+  const recurExpense = recurringExpenseTotalForMonth(mk);    // 当月定期支出
+  const recurIncome = recurringIncomeTotalForMonth(mk);      // 当月定期収入
+  const forecastEnd = realBalanceForMonth(mk);                // 当月末予測残高
+
+  const panel = document.getElementById('panel-home');
+  panel.innerHTML = `
+    ${homeBackupNudgeHTML()}
+    <div class="hero">
+      <div class="hero-row">
+        <div style="display:flex; align-items:flex-end; gap:18px; flex-wrap:wrap; row-gap:10px;">
+          <div>
+            <div class="hero-label">当月末予測残高（${monthLabel(mk)}）</div>
+            <div class="hero-amount num ${forecastEnd<0?'negative':''}">${yen(forecastEnd)}</div>
+          </div>
+          <div>
+            <div class="hero-label">現在残高</div>
+            <div class="num" style="font-size:18px; font-weight:700; margin-top:4px;">${yen(total)}</div>
+          </div>
+        </div>
+        ${heroRingSVG(total, settlementTotal+recurExpense)}
+      </div>
+      <div class="hero-breakdown">
+        <div class="hero-bd-item">
+          <div class="hero-bd-label">当月利用額</div>
+          <div class="hero-bd-value num">${yen(usageTotal)}</div>
+        </div>
+        <div class="hero-bd-item">
+          <div class="hero-bd-label">当月引落予定額</div>
+          <div class="hero-bd-value num">${yen(settlementTotal)}</div>
+        </div>
+        <div class="hero-bd-item">
+          <div class="hero-bd-label">当月定期支出</div>
+          <div class="hero-bd-value num">${yen(recurExpense)}</div>
+        </div>
+        <div class="hero-bd-item">
+          <div class="hero-bd-label">当月定期収入</div>
+          <div class="hero-bd-value num">${yen(recurIncome)}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="fab-row">
+      <button class="btn btn-primary" style="flex:1" onclick="openCreditForm()">
+        <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+        カード明細
+      </button>
+      <button class="btn btn-secondary" style="flex:1" onclick="openBankForm()">
+        <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><path d="M3 10l9-6 9 6"/><path d="M5 10v9M19 10v9M9 10v9M15 10v9"/><path d="M3 19h18"/></svg>
+        入出金登録
+      </button>
+    </div>
+
+    <div class="section-label">口座残高</div>
+    <div class="card">
+      <div id="acctListHome"></div>
+    </div>
+
+    ${renderAccountCashflow()}
+
+    <div class="section-label">引落予定一覧</div>
+    <div class="card" style="padding-bottom:10px;">
+      <div class="helper-text" style="margin-bottom:8px;">※ 引落日が土日の場合は翌月曜日に自動調整しています（祝日は非対応）</div>
+      <div id="paymentScheduleList"></div>
+      <div id="paymentScheduleMore"></div>
+    </div>
+
+    <div class="section-label">明細一覧</div>
+    <div class="card">
+      <div class="field" style="margin-bottom:10px;">
+        <label>表示月</label>
+        <select id="homeMonthSelect"></select>
+      </div>
+      <div class="field" style="margin-bottom:10px;">
+        <label>キーワード検索</label>
+        <input type="text" id="homeSearchInput" placeholder="メモ・カード名などで検索" value="${escapeHtml(homeSearchKeyword)}">
+      </div>
+      <div class="filter-row" id="homeFilterRow"></div>
+      <div id="homeEntryList"></div>
+      <div id="homeLoadMoreWrap"></div>
+    </div>
+  `;
+
+  renderAccountListHome();
+  renderHomeMonthSelect();
+  renderHomeSearchInput();
+  renderHomeFilterRow();
+  renderHomeEntryList();
+  renderPaymentScheduleBox();
+}
+
+let homeNudgeDismissed = false; // resets on full page reload, by design
+
+function homeBackupNudgeHTML(){
+  if(homeNudgeDismissed) return '';
+
+  // 優先度1: shortfall のある口座
+  const shortfallAcct = DB.accounts.map(a => ({ a, cf: computeAccountCashflow(a.id) })).find(r => r.cf.status === 'shortfall');
+  if(shortfallAcct){
+    const { a, cf } = shortfallAcct;
+    const dateStr = cf.minDate ? fmtDateShort(cf.minDate) : '近日中';
+    const msg = `「${a.name}」が${dateStr}時点で ${yen(cf.minBalance)} となり、残高が不足する見込みです。入金・振替を確認してください。`;
+    return `
+      <div class="card" style="background:var(--coral-tint); border-color:var(--coral); display:flex; align-items:center; gap:10px; padding:12px 13px; margin-bottom:14px; cursor:pointer;" onclick="document.getElementById('accountCashflowSection')?.scrollIntoView({behavior:'smooth'})">
+        <span style="font-size:16px;">⚠️</span>
+        <div style="flex:1; font-size:12.5px; line-height:1.5; color:var(--ink);">${escapeHtml(msg)}</div>
+        <button class="icon-btn" style="background:transparent;" onclick="event.stopPropagation(); dismissHomeNudge();">
+          <svg viewBox="0 0 24 24" stroke="var(--ink-soft)" fill="none" stroke-width="2"><path d="M5 5l14 14M19 5L5 19"/></svg>
+        </button>
+      </div>
+    `;
+  }
+
+  // 優先度2: caution のある口座
+  const cautionAcct = DB.accounts.map(a => ({ a, cf: computeAccountCashflow(a.id) })).find(r => r.cf.status === 'caution');
+  if(cautionAcct){
+    const { a, cf } = cautionAcct;
+    const dateStr = cf.minDate ? fmtDateShort(cf.minDate) : '近日中';
+    const msg = `「${a.name}」が${dateStr}時点で設定した安全余裕額を下回る見込みです（最低 ${yen(cf.minBalance)}）。`;
+    return `
+      <div class="card" style="background:rgba(var(--gold-rgb,234,179,8),0.12); border-color:var(--gold); display:flex; align-items:center; gap:10px; padding:12px 13px; margin-bottom:14px; cursor:pointer;" onclick="document.getElementById('accountCashflowSection')?.scrollIntoView({behavior:'smooth'})">
+        <span style="font-size:16px;">⚡</span>
+        <div style="flex:1; font-size:12.5px; line-height:1.5; color:var(--ink);">${escapeHtml(msg)}</div>
+        <button class="icon-btn" style="background:transparent;" onclick="event.stopPropagation(); dismissHomeNudge();">
+          <svg viewBox="0 0 24 24" stroke="var(--ink-soft)" fill="none" stroke-width="2"><path d="M5 5l14 14M19 5L5 19"/></svg>
+        </button>
+      </div>
+    `;
+  }
+
+  // 優先度3: バックアップ催促（既存ロジック）
+  const lastExport = getLastExportTime();
+  const exportDays = daysSince(lastExport);
+  const stale = lastExport===null || exportDays >= 30;
+  if(!stale) return '';
+  const msg = lastExport===null
+    ? 'まだバックアップファイルを保存していません。タップして書き出しましょう。'
+    : `最後のバックアップから${exportDays}日経っています。タップして書き出しましょう。`;
+  return `
+    <div class="card" style="background:var(--coral-tint); border-color:var(--coral); display:flex; align-items:center; gap:10px; padding:12px 13px; margin-bottom:14px; cursor:pointer;" onclick="switchTab('settings')">
+      <span style="font-size:16px;">⚠️</span>
+      <div style="flex:1; font-size:12.5px; line-height:1.5; color:var(--ink);">${escapeHtml(msg)}</div>
+      <button class="icon-btn" style="background:transparent;" onclick="event.stopPropagation(); dismissHomeNudge();">
+        <svg viewBox="0 0 24 24" stroke="var(--ink-soft)" fill="none" stroke-width="2"><path d="M5 5l14 14M19 5L5 19"/></svg>
+      </button>
+    </div>
+  `;
+}
+function dismissHomeNudge(){
+  homeNudgeDismissed = true;
+  renderHome();
+}
+
+function heroRingSVG(total, spent){
+  const pct = total>0 ? Math.max(0, Math.min(1, 1 - spent/total)) : 0;
+  const r = 30, c = 2*Math.PI*r;
+  const offset = c * (1-pct);
+  return `
+  <svg width="64" height="64" viewBox="0 0 70 70" class="hero-ring">
+    <circle cx="35" cy="35" r="${r}" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="6"/>
+    <circle cx="35" cy="35" r="${r}" fill="none" stroke="#fff" stroke-width="6"
+      stroke-dasharray="${c}" stroke-dashoffset="${offset}" stroke-linecap="round"
+      transform="rotate(-90 35 35)"/>
+    <text x="35" y="40" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">${Math.round(pct*100)}%</text>
+  </svg>`;
+}
+
+function renderAccountListHome(){
+  const el = document.getElementById('acctListHome');
+  if(DB.accounts.length===0){
+    el.innerHTML = `<div class="empty-state"><div class="et">口座が未登録です</div><div class="es">設定タブから口座を追加してください</div></div>`;
+    return;
+  }
+  el.innerHTML = DB.accounts.map(a=>`
+    <div class="acct-row">
+      <div class="acct-name-wrap">
+        <span class="acct-name">${escapeHtml(a.name)}</span>
+        ${a.isMain ? '<span class="acct-badge">メイン</span>' : ''}
+      </div>
+      <span class="acct-balance num">${yen(a.balance)}</span>
+    </div>
+  `).join('') + `
+    <div class="acct-total-row">
+      <span class="acct-total-label">総残高</span>
+      <span class="acct-total-value num">${yen(totalBalance())}</span>
+    </div>
+  `;
+}
+
+// 明細一覧に表示する「対象月」の選択肢を作る。
+// データに登場する月＋現在月をすべて拾い、新しい月から降順で並べる。
+function homeAvailableMonths(){
+  const set = new Set();
+  set.add(monthKey(new Date()));
+  DB.creditEntries.forEach(e=>{ if(e.date) set.add(isoToMonthKey(e.date)); });
+  DB.bankEntries.forEach(e=>{ if(e.date) set.add(isoToMonthKey(e.date)); });
+  return Array.from(set).sort().reverse();
+}
+
+function renderHomeMonthSelect(){
+  const el = document.getElementById('homeMonthSelect');
+  if(!el) return;
+  const months = homeAvailableMonths();
+  // 選択中の月が選択肢に無い場合（例：データ削除後）も表示できるよう保険で追加
+  if(homeMonthFilter!=='all' && !months.includes(homeMonthFilter)) months.unshift(homeMonthFilter);
+  el.innerHTML = `<option value="all" ${homeMonthFilter==='all'?'selected':''}>すべての月</option>` +
+    months.map(mk=>`<option value="${mk}" ${homeMonthFilter===mk?'selected':''}>${monthLabel(mk)}</option>`).join('');
+  el.onchange = ()=>{
+    homeMonthFilter = el.value;
+    homeDisplayLimit = 50;
+    renderHomeEntryList();
+  };
+}
+
+function renderHomeSearchInput(){
+  const el = document.getElementById('homeSearchInput');
+  if(!el) return;
+  el.oninput = ()=>{
+    homeSearchKeyword = el.value;
+    homeDisplayLimit = 50;
+    renderHomeEntryList();
+  };
+}
+
+function renderHomeFilterRow(){
+  const el = document.getElementById('homeFilterRow');
+  const filters = [['all','すべて'],['credit','カード'],['bank','入出金']];
+  el.innerHTML = filters.map(([key,label])=>
+    `<button class="filter-chip ${homeListFilter===key?'active':''}" onclick="setHomeFilter('${key}')">${label}</button>`
+  ).join('');
+}
+function setHomeFilter(key){
+  homeListFilter = key;
+  homeDisplayLimit = 50;
+  renderHomeFilterRow();
+  renderHomeEntryList();
+}
+
+function combinedHomeEntries(){
+  const credit = DB.creditEntries.map(e=>({...e, _kind:'credit'}));
+  const bank = DB.bankEntries.map(e=>({...e, _kind:'bank'}));
+  let all = [...credit, ...bank];
+  if(homeListFilter==='credit') all = credit;
+  if(homeListFilter==='bank') all = bank;
+
+  // 表示月で絞り込み（デフォルトは今月。「すべての月」選択時はスキップ）
+  if(homeMonthFilter && homeMonthFilter!=='all'){
+    all = all.filter(e=>e.date && isoToMonthKey(e.date)===homeMonthFilter);
+  }
+
+  // キーワード検索（メモ・カード名・口座名を対象）
+  const kw = (homeSearchKeyword||'').trim().toLowerCase();
+  if(kw){
+    all = all.filter(e=>{
+      if(e._kind==='credit'){
+        const card = findCard(e.cardId);
+        return [e.memo, card?card.name:'']
+          .some(v=>String(v||'').toLowerCase().includes(kw));
+      }else{
+        const acct = findAccount(e.accountId);
+        return [e.description, e.memo, acct?acct.name:'']
+          .some(v=>String(v||'').toLowerCase().includes(kw));
+      }
+    });
+  }
+
+  all.sort((a,b)=> b.date.localeCompare(a.date) || (b.id > a.id ? 1 : -1));
+  return all;
+}
+
+function renderHomeEntryList(){
+  const el = document.getElementById('homeEntryList');
+  const moreWrap = document.getElementById('homeLoadMoreWrap');
+  const items = combinedHomeEntries();
+  if(items.length===0){
+    el.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" fill="none"><path d="M4 6h16M4 12h16M4 18h7"/></svg>
+      <div class="et">${homeMonthFilter!=='all' || homeSearchKeyword ? '該当する明細がありません' : 'まだ明細がありません'}</div>
+      <div class="es">${homeMonthFilter!=='all' || homeSearchKeyword ? '月や検索条件を変更してみてください' : '上のボタンから登録してみましょう'}</div>
+    </div>`;
+    if(moreWrap) moreWrap.innerHTML = '';
+    return;
+  }
+  const shown = items.slice(0, homeDisplayLimit);
+  const swipeHint = `<div class="swipe-hint">
+    <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    左にスワイプして操作
+  </div>`;
+  el.innerHTML = swipeHint + shown.map(e=>{
+    if(e._kind==='credit'){
+      const card = findCard(e.cardId);
+      const cardName = escapeHtml(card ? card.name : '(削除済みカード)');
+      const memo = e.memo ? escapeHtml(e.memo) : '';
+      return `
+      <div class="entry-wrap" data-entry-id="${e.id}" data-entry-kind="credit">
+        <div class="entry" data-detail-tap="credit:${e.id}">
+          <div class="entry-icon credit">${ICON_CARD}</div>
+          <div class="entry-main">
+            <div class="entry-title">
+              <span class="entry-date">${fmtDateShort(e.date)}</span>
+              <span>${cardName}</span>
+              <span class="tiny-tag ${e.type}">${typeLabel(e.type)}</span>
+              ${e.largeExpenseId ? '<span class="tiny-tag" style="background:var(--teal-tint);color:var(--teal-deep);">定期</span>' : ''}
+            </div>
+          </div>
+          <div class="entry-amount out num">-${yen(e.amount)}</div>
+        </div>
+        <div class="entry-actions">
+          <button class="entry-action-btn act-edit" onclick="openCreditForm('${e.id}')">
+            ${ICON_EDIT}<span>編集</span>
+          </button>
+          <button class="entry-action-btn act-copy" onclick="duplicateCreditEntry('${e.id}')">
+            ${ICON_COPY}<span>複製</span>
+          </button>
+          <button class="entry-action-btn act-del" onclick="deleteCreditEntry('${e.id}')">
+            ${ICON_DEL}<span>削除</span>
+          </button>
+        </div>
+      </div>`;
+    }else{
+      const acct = findAccount(e.accountId);
+      const isDeposit = e.transactionType==='deposit';
+      const isPending = e.appliedToBalance === false;
+      const desc = escapeHtml(e.description||'（内容未入力）');
+      const acctName = escapeHtml(acct ? acct.name : '(削除済み口座)');
+      const memo = e.memo ? escapeHtml(e.memo) : '';
+      return `
+      <div class="entry-wrap" data-entry-id="${e.id}" data-entry-kind="bank">
+        <div class="entry" data-detail-tap="bank:${e.id}">
+          <div class="entry-icon ${isDeposit?'deposit':'withdraw'}">${ICON_BANK}</div>
+          <div class="entry-main">
+            <div class="entry-title">
+              <span class="entry-date">${fmtDateShort(e.date)}</span>
+              <span>${desc}</span>
+              ${isPending ? '<span class="tiny-tag" style="background:#eee;color:#999">予定</span>' : ''}
+            </div>
+          </div>
+          <div class="entry-amount ${isDeposit?'in':'out'} num">${isDeposit?'+':'-'}${yen(e.amount)}</div>
+        </div>
+        <div class="entry-actions">
+          <button class="entry-action-btn act-copy" onclick="duplicateBankEntry('${e.id}')">
+            ${ICON_COPY}<span>複製</span>
+          </button>
+          <button class="entry-action-btn act-edit" onclick="openBankForm('${e.id}')">
+            ${ICON_EDIT}<span>編集</span>
+          </button>
+          <button class="entry-action-btn act-del" onclick="deleteBankEntry('${e.id}')">
+            ${ICON_DEL}<span>削除</span>
+          </button>
+        </div>
+      </div>`;
+    }
+  }).join('');
+
+  if(moreWrap){
+    const remaining = items.length - shown.length;
+    moreWrap.innerHTML = remaining > 0
+      ? `<button class="btn btn-ghost btn-block" style="margin-top:10px;" onclick="loadMoreHomeEntries()">もっと見る（残り${remaining}件）</button>`
+      : '';
+  }
+}
+
+function loadMoreHomeEntries(){
+  homeDisplayLimit += 50;
+  renderHomeEntryList();
+}
+
+/* ---------- クレジット明細タップ詳細モーダル ---------- */
+function openCreditEntryDetail(id){
+  const e = DB.creditEntries.find(x=>x.id===id);
+  if(!e) return;
+  const card = findCard(e.cardId);
+  const acct = DB.accounts.find(a=>a.id===e.settlementAccountId);
+  const settlementMk = entrySettlementMonthKey(e);
+  const [sy, sm] = settlementMk.split('-').map(Number);
+  const settlementLabel = `${sy}年${sm}月引落`;
+
+  // 定期入出金元情報
+  let recurHTML = '';
+  if(e.largeExpenseId){
+    const src = DB.largeExpenses.find(x=>x.id===e.largeExpenseId);
+    recurHTML = `
+      <div class="modal-detail-summary-row">
+        <span style="font-size:13px; color:var(--ink-soft); font-weight:600;">定期入出金</span>
+        <span style="font-size:14px; font-weight:600;">${escapeHtml(src ? src.name : '（削除済み）')}</span>
+      </div>`;
+  }
+
+  openModal(`
+    ${modalHeader('カード明細')}
+    <div style="text-align:center; padding:10px 0 18px;">
+      <div style="font-size:16px; color:var(--ink); font-weight:700; margin-bottom:6px;">${fmtDateShort(e.date)}　${escapeHtml(card ? card.name : '(削除済みカード)')}</div>
+      <div class="num" style="font-size:32px; font-weight:700; color:var(--coral); line-height:1.1;">-${yen(e.amount)}</div>
+    </div>
+    <div style="border-top:1px solid var(--line); margin-bottom:4px;"></div>
+    <div class="modal-detail-summary-row">
+      <span style="font-size:13px; color:var(--ink-soft); font-weight:600;">区分</span>
+      <span class="tiny-tag ${e.type}" style="font-size:12px; padding:3px 8px;">${typeLabel(e.type)}</span>
+    </div>
+    <div class="modal-detail-summary-row">
+      <span style="font-size:13px; color:var(--ink-soft); font-weight:600;">引落予定</span>
+      <span style="font-size:14px; font-weight:600;">${escapeHtml(settlementLabel)}</span>
+    </div>
+    <div class="modal-detail-summary-row">
+      <span style="font-size:13px; color:var(--ink-soft); font-weight:600;">引落口座</span>
+      <span style="font-size:14px; font-weight:600;">${escapeHtml(acct ? acct.name : '—')}</span>
+    </div>
+    ${recurHTML}
+    ${e.memo ? `
+    <div class="modal-detail-summary-row" style="border-bottom:none;">
+      <span style="font-size:13px; color:var(--ink-soft); font-weight:600;">メモ</span>
+      <span style="font-size:14px;">${escapeHtml(e.memo)}</span>
+    </div>` : ''}
+    <div class="form-actions" style="margin-top:20px;">
+      <button class="btn btn-primary" onclick="closeModal(); openCreditForm('${e.id}')">編集</button>
+      <button class="btn btn-ghost" onclick="closeModal(); duplicateCreditEntry('${e.id}')">複製</button>
+      <button class="btn btn-ghost" onclick="deleteCreditEntry('${e.id}')">削除</button>
+    </div>
+  `);
+}
+
+/* ---------- 入出金明細タップ詳細モーダル ---------- */
+function openBankEntryDetail(id){
+  const e = DB.bankEntries.find(x=>x.id===id);
+  if(!e) return;
+  const acct = findAccount(e.accountId);
+  const isDeposit = e.transactionType === 'deposit';
+  const isPending = e.appliedToBalance === false;
+
+  openModal(`
+    ${modalHeader(isDeposit ? '入金明細' : '出金明細')}
+    <div style="text-align:center; padding:10px 0 18px;">
+      <div style="font-size:11px; color:var(--ink-soft); font-weight:600; margin-bottom:4px;">${fmtDateShort(e.date)}　${escapeHtml(acct ? acct.name : '(削除済み口座)')}</div>
+      <div class="num" style="font-size:32px; font-weight:700; color:${isDeposit?'var(--green)':'var(--coral)'}; line-height:1.1;">${isDeposit?'+':'-'}${yen(e.amount)}</div>
+      ${isPending ? '<div style="font-size:12px; color:var(--ink-soft); margin-top:6px;">※ 残高未反映（予定）</div>' : ''}
+    </div>
+    <div style="border-top:1px solid var(--line); margin-bottom:4px;"></div>
+    ${e.description ? `
+    <div class="modal-detail-summary-row">
+      <span style="font-size:13px; color:var(--ink-soft); font-weight:600;">内容</span>
+      <span style="font-size:14px; font-weight:600;">${escapeHtml(e.description)}</span>
+    </div>` : ''}
+    ${e.memo ? `
+    <div class="modal-detail-summary-row" style="border-bottom:none;">
+      <span style="font-size:13px; color:var(--ink-soft); font-weight:600;">メモ</span>
+      <span style="font-size:14px;">${escapeHtml(e.memo)}</span>
+    </div>` : ''}
+    <div class="form-actions" style="margin-top:20px;">
+      <button class="btn btn-ghost" onclick="deleteBankEntry('${e.id}')">削除</button>
+      <button class="btn btn-primary" onclick="closeModal(); openBankForm('${e.id}')">編集</button>
+    </div>
+  `);
+}
+
+/* ---------- Credit entry form ---------- */
+function openCreditForm(editId){
+  const editing = editId ? DB.creditEntries.find(e=>e.id===editId) : null;
+  const type = editing ? editing.type : 'personal';
+  const state = {
+    date: editing ? editing.date : todayISO(),
+    type: type,
+    cardId: editing ? editing.cardId : (DB.cards.find(c=>cardMatchesType(c,type) && !c.hidden)||{}).id,
+    amount: editing ? editing.amount : '',
+    settlementAccountId: editing ? editing.settlementAccountId : (mainAccount()||{}).id,
+    memo: editing ? editing.memo : '',
+  };
+
+  function body(){
+    const cardsOfType = DB.cards.filter(c=>cardMatchesType(c,state.type) && (!c.hidden || c.id===state.cardId));
+    return `
+      ${modalHeader(editing ? 'カード明細を編集' : 'カード明細を登録')}
+      <div class="field">
+        <label>利用日<span class="req">*</span></label>
+        <input type="date" id="cf_date" value="${state.date}" min="1900-01-01" max="2099-12-31">
+      </div>
+      <div class="field">
+        <label>区分<span class="req">*</span></label>
+        <div class="segmented">
+          <button type="button" class="${state.type==='personal'?'active':''}" onclick="creditFormSetType('personal')">個人</button>
+          <button type="button" class="${state.type==='household'?'active':''}" onclick="creditFormSetType('household')">家計</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>カード<span class="req">*</span></label>
+        ${cardsOfType.length ? `
+        <div class="chip-group">
+          ${cardsOfType.map(c=>`<button type="button" class="chip ${state.cardId===c.id?'active':''}" onclick="creditFormSetCard('${c.id}')">${escapeHtml(c.name)}${c.hidden?'（非表示）':''}</button>`).join('')}
+        </div>` : `<div class="helper-text">この区分のカードが未登録です。設定タブから追加してください。</div>`}
+      </div>
+      <div class="field">
+        <label>金額<span class="req">*</span></label>
+        <input type="number" id="cf_amount" inputmode="numeric" placeholder="0" value="${state.amount}">
+      </div>
+      <div class="field">
+        <label>内容</label>
+        <textarea id="cf_memo" placeholder="例：Netflix、ガソリン代（任意）">${escapeHtml(state.memo)}</textarea>
+      </div>
+      <div class="field">
+        <label>引落口座</label>
+        <select id="cf_account">
+          ${DB.accounts.map(a=>`<option value="${a.id}" ${state.settlementAccountId===a.id?'selected':''}>${escapeHtml(a.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-actions">
+        ${editing ? `<button class="btn btn-ghost" onclick="deleteCreditEntry('${editing.id}')">削除</button>` : ''}
+        <button class="btn btn-primary" onclick="submitCreditForm(${editing? `'${editing.id}'`:'null'})">${editing?'更新する':'登録する'}</button>
+      </div>
+    `;
+  }
+
+  window._creditFormState = state;
+  window.creditFormSetType = (t)=>{
+    state.type = t;
+    const firstCard = DB.cards.find(c=>cardMatchesType(c,t) && !c.hidden);
+    state.cardId = firstCard ? firstCard.id : null;
+    openModal(body());
+    captureCreditFormInputs();
+  };
+  window.creditFormSetCard = (id)=>{ state.cardId = id; openModal(body()); captureCreditFormInputs(); };
+
+  function captureCreditFormInputs(){
+    const dateEl = document.getElementById('cf_date');
+    const amtEl = document.getElementById('cf_amount');
+    const acctEl = document.getElementById('cf_account');
+    const memoEl = document.getElementById('cf_memo');
+    if(dateEl) dateEl.value = state.date, dateEl.oninput = ()=>state.date = dateEl.value;
+    if(amtEl) amtEl.value = state.amount, amtEl.oninput = ()=>state.amount = amtEl.value;
+    if(acctEl) acctEl.oninput = ()=>state.settlementAccountId = acctEl.value;
+    if(memoEl) memoEl.oninput = ()=>state.memo = memoEl.value;
+  }
+
+  openModal(body());
+  captureCreditFormInputs();
+}
+
+function submitCreditForm(editId){
+  const s = window._creditFormState;
+  if(!s.date){ showToast('利用日を入力してください'); return; }
+  if(!s.cardId){ showToast('カードを選択してください'); return; }
+  if(!s.amount || Number(s.amount)<=0){ showToast('金額を入力してください'); return; }
+
+  const selectedCard = findCard(s.cardId);
+  const cardSnap = { closingDay: selectedCard ? selectedCard.closingDay : null, paymentDay: selectedCard ? selectedCard.paymentDay : null };
+
+  if(editId){
+    const entry = DB.creditEntries.find(e=>e.id===editId);
+    touchRecord(Object.assign(entry, {
+      date:s.date, type:s.type, cardId:s.cardId, amount:Number(s.amount),
+      settlementAccountId:s.settlementAccountId, memo:s.memo,
+      ...cardSnap
+    }));
+    showToast('明細を更新しました');
+  }else{
+    DB.creditEntries.push(stampNew({
+      id: uid('ce'), date:s.date, type:s.type, cardId:s.cardId, amount:Number(s.amount),
+      settlementAccountId:s.settlementAccountId, memo:s.memo,
+      ...cardSnap
+    }));
+    showToast('明細を登録しました');
+  }
+  saveData();
+  closeModal();
+  renderHome(); renderSummary();
+}
+
+function deleteCreditEntry(id){
+  const entry = DB.creditEntries.find(e=>e.id===id);
+  const isGenerated = entry && entry.largeExpenseId;
+  const srcExp = isGenerated ? DB.largeExpenses.find(e=>e.id===entry.largeExpenseId) : null;
+  const msg = isGenerated
+    ? `この明細は定期入出金「${srcExp ? escapeHtml(srcExp.name) : '（削除済み）'}」から自動生成されました。削除すると翌月以降は引き続き生成されますが、この月の分は再生成されません。削除しますか？`
+    : 'この明細を削除しますか？';
+  askConfirm(msg, ()=>{
+    DB.creditEntries = DB.creditEntries.filter(e=>e.id!==id);
+    saveData();
+    closeModal();
+    renderHome(); renderSummary();
+  });
+}
+
+/* ---------- Bank entry form ---------- */
+function openBankForm(editId){
+  const editing = editId ? DB.bankEntries.find(e=>e.id===editId) : null;
+  const state = {
+    date: editing ? editing.date : todayISO(),
+    accountId: editing ? editing.accountId : (mainAccount()||{}).id,
+    transactionType: editing ? editing.transactionType : 'deposit',
+    amount: editing ? editing.amount : '',
+    description: editing ? editing.description : '',
+    memo: editing ? editing.memo : '',
+  };
+
+  function body(){
+    return `
+      ${modalHeader(editing ? '入出金を編集' : '入出金を登録')}
+      <div class="field">
+        <label>登録日<span class="req">*</span></label>
+        <input type="date" id="bf_date" value="${state.date}" min="1900-01-01" max="2099-12-31">
+      </div>
+      <div class="field">
+        <label>入出金区分<span class="req">*</span></label>
+        <div class="segmented">
+          <button type="button" class="${state.transactionType==='deposit'?'active':''}" onclick="bankFormSetType('deposit')">入金</button>
+          <button type="button" class="${state.transactionType==='withdraw'?'active':''}" onclick="bankFormSetType('withdraw')">出金</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>口座<span class="req">*</span></label>
+        <select id="bf_account">
+          ${DB.accounts.map(a=>`<option value="${a.id}" ${state.accountId===a.id?'selected':''}>${escapeHtml(a.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>金額<span class="req">*</span></label>
+        <input type="number" id="bf_amount" inputmode="numeric" placeholder="0" value="${state.amount}">
+      </div>
+      <div class="field">
+        <label>内容</label>
+        <input type="text" id="bf_description" placeholder="例：給与、現金おろし（任意）" value="${escapeHtml(state.description)}">
+      </div>
+      <div class="field">
+        <label>メモ</label>
+        <textarea id="bf_memo">${escapeHtml(state.memo)}</textarea>
+      </div>
+      <div class="form-actions">
+        ${editing ? `<button class="btn btn-ghost" onclick="deleteBankEntry('${editing.id}')">削除</button>` : ''}
+        <button class="btn btn-primary" onclick="submitBankForm(${editing? `'${editing.id}'`:'null'})">${editing?'更新する':'登録する'}</button>
+      </div>
+    `;
+  }
+
+  window._bankFormState = state;
+  window.bankFormSetType = (t)=>{ state.transactionType = t; openModal(body()); captureBankFormInputs(); };
+
+  function captureBankFormInputs(){
+    const dateEl = document.getElementById('bf_date');
+    const acctEl = document.getElementById('bf_account');
+    const amtEl = document.getElementById('bf_amount');
+    const descEl = document.getElementById('bf_description');
+    const memoEl = document.getElementById('bf_memo');
+    if(dateEl) dateEl.oninput = ()=>state.date = dateEl.value;
+    if(acctEl) acctEl.oninput = ()=>state.accountId = acctEl.value;
+    if(amtEl) amtEl.oninput = ()=>state.amount = amtEl.value;
+    if(descEl) descEl.oninput = ()=>state.description = descEl.value;
+    if(memoEl) memoEl.oninput = ()=>state.memo = memoEl.value;
+  }
+
+  openModal(body());
+  captureBankFormInputs();
+}
+
+function submitBankForm(editId){
+  const s = window._bankFormState;
+  if(!s.date){ showToast('登録日を入力してください'); return; }
+  if(!s.accountId){ showToast('口座を選択してください'); return; }
+  if(!s.amount || Number(s.amount)<=0){ showToast('金額を入力してください'); return; }
+
+  const prevEntry = editId ? DB.bankEntries.find(e=>e.id===editId) : null;
+
+  // B-03対応：以前に口座残高へ反映済みだった分のみ取り消す。保留中（未来日）
+  // のまま編集された場合はそもそも反映されていないため取り消し不要。
+  if(prevEntry && prevEntry.appliedToBalance){
+    reverseBankEntryEffect(prevEntry);
+  }
+
+  // 新しい内容は、日付が本日以前の場合のみ今すぐ口座残高へ反映する。
+  // 未来日の場合は反映を保留し（appliedToBalance=false）、12か月予測側でのみ
+  // 計上する。保留分は日付が到来した時点でアプリ起動時のキャッチアップにより
+  // 自動的に反映される（runDueBankEntriesCatchUp）。
+  const willApplyNow = !isFutureDate(s.date);
+  if(willApplyNow){
+    applyBankEntryEffect({ accountId:s.accountId, transactionType:s.transactionType, amount:Number(s.amount) });
+  }
+
+  if(editId){
+    touchRecord(Object.assign(prevEntry, {
+      date:s.date, accountId:s.accountId, transactionType:s.transactionType,
+      amount:Number(s.amount), description:s.description, memo:s.memo,
+      appliedToBalance: willApplyNow,
+    }));
+    showToast('入出金を更新しました');
+  }else{
+    DB.bankEntries.push(stampNew({
+      id: uid('be'), date:s.date, accountId:s.accountId, transactionType:s.transactionType,
+      amount:Number(s.amount), description:s.description, memo:s.memo,
+      appliedToBalance: willApplyNow,
+    }));
+    showToast('入出金を登録しました');
+  }
+  saveData();
+  closeModal();
+  renderHome(); renderSettings(); renderSummary();
+}
+
+function deleteBankEntry(id){
+  // B-03対応：保留中（appliedToBalance:false）の明細は削除しても口座残高は
+  // 変化しないため、その旨が伝わる文言に出し分ける。
+  const target = DB.bankEntries.find(e=>e.id===id);
+  const isPending = target && target.appliedToBalance === false;
+  const confirmMsg = isPending
+    ? 'この予定（未反映）の入出金を削除しますか？口座残高はまだ反映されていないため変化しません。'
+    : 'この入出金を削除しますか？口座残高も元に戻ります。';
+  askConfirm(confirmMsg, ()=>{
+    const entry = DB.bankEntries.find(e=>e.id===id);
+    // 反映済み（appliedToBalance:true）の場合のみ口座残高を戻す。
+    // 保留中（未来日でまだ反映されていない）の明細はそもそも残高に影響して
+    // いないため、削除しても残高は変化しない。
+    if(entry && entry.appliedToBalance){
+      reverseBankEntryEffect(entry);
+    }
+    DB.bankEntries = DB.bankEntries.filter(e=>e.id!==id);
+    saveData();
+    closeModal();
+    renderHome(); renderSettings(); renderSummary();
+  });
+}
+
+/* =========================================================================
+   複製（コピー）機能  4-4 / 5-6
+   ========================================================================= */
+// 複製ボタン共通SVG（コピーアイコン）
+const ICON_COPY = `<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`;
+// 編集ボタン共通SVG
+const ICON_EDIT = `<svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg>`;
+// 削除ボタン共通SVG
+const ICON_DEL  = `<svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m-9 0l1 14h8l1-14"/></svg>`;
+// カード表示/非表示トグル共通SVG
+const ICON_EYE     = `<svg viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const ICON_EYE_OFF = `<svg viewBox="0 0 24 24"><path d="M17.94 17.94A10.94 10.94 0 0112 19c-7 0-11-7-11-7a18.5 18.5 0 015.06-5.94M9.9 4.24A10.94 10.94 0 0112 4c7 0 11 7 11 7a18.5 18.5 0 01-2.16 3.19M14.12 14.12a3 3 0 11-4.24-4.24"/><path d="M1 1l22 22"/></svg>`;
+// 明細行アイコン：クレジットカード
+const ICON_CARD    = `<svg viewBox="0 0 24 24"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/></svg>`;
+// 明細行アイコン：入金（下矢印）
+const ICON_DEPOSIT = `<svg viewBox="0 0 24 24"><path d="M12 3v14M5 12l7 7 7-7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+// 明細行アイコン：出金（上矢印）
+const ICON_WITHDRAW= `<svg viewBox="0 0 24 24"><path d="M12 21V7M5 12l7-7 7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ICON_PLUS  = `<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-linecap="round"/></svg>`;
+const ICON_MINUS = `<svg viewBox="0 0 24 24"><path d="M5 12h14" stroke-linecap="round"/></svg>`;
+/* 銀行口座の入出金（振込・ATMなど）を表すアイコン */
+const ICON_BANK = `<svg viewBox="0 0 24 24"><path d="M2 10l10-6 10 6" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 10v9M9 10v9M15 10v9M20 10v9" stroke-linecap="round"/><path d="M2 19h20" stroke-linecap="round"/></svg>`;
+/* 収入・支出を表す斜め矢印アイコン（↗収入／↘支出） */
+const ICON_ARROW_UPRIGHT   = `<svg viewBox="0 0 24 24"><path d="M6 18L18 6M9 6h9v9" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const ICON_ARROW_DOWNRIGHT = `<svg viewBox="0 0 24 24"><path d="M6 6l12 12M9 18H6V9" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+// 4-4 クレジット明細を複製（利用日を今日にリセット）
+function duplicateCreditEntry(id){
+  const src = DB.creditEntries.find(e=>e.id===id);
+  if(!src) return;
+  const card = findCard(src.cardId);
+  DB.creditEntries.push(stampNew({
+    ...src,
+    id: uid('ce'),
+    date: todayISO(),
+    closingDay: card ? card.closingDay : src.closingDay,
+    paymentDay: card ? card.paymentDay : src.paymentDay,
+  }));
+  saveData();
+  renderHome(); renderSummary();
+  showToast('明細を複製しました（利用日を今日に設定）');
+}
+
+// 4-4 入出金を複製（日付を今日にリセット・残高は反映しない）
+function duplicateBankEntry(id){
+  const src = DB.bankEntries.find(e=>e.id===id);
+  if(!src) return;
+  // 複製は常に本日日付になるため（date: todayISO()）、新方式でも必ず
+  // 即時反映の対象になる＝appliedToBalance:true で確定してよい。
+  const newEntry = stampNew({ ...src, id: uid('be'), date: todayISO(), appliedToBalance: true });
+  DB.bankEntries.push(newEntry);
+  // 残高にも反映
+  applyBankEntryEffect(newEntry);
+  saveData();
+  renderHome(); renderSettings(); renderSummary();
+  showToast('入出金を複製しました（日付を今日に設定）');
+}
+
+// 5-6 定期入出金を複製
+function duplicateLargeExpense(id){
+  const src = DB.largeExpenses.find(e=>e.id===id);
+  if(!src) return;
+  DB.largeExpenses.push(stampNew({
+    ...src,
+    id: uid('le'),
+    name: src.name + '（コピー）',
+    customMonths: (src.customMonths||[]).slice(),
+    monthlyAmounts: Object.assign({}, src.monthlyAmounts||{}),
+  }));
+  saveData();
+  renderLarge(); renderHome(); renderSummary();
+  showToast('定期入出金を複製しました');
+}
+
+/* =========================================================================
+   LARGE EXPENSE TAB (大型出費)
+   ========================================================================= */
+let largeListFilter = 'all'; // all | personal | household
+
+function renderLarge(){
+  const panel = document.getElementById('panel-large');
+  const mk = monthKey(new Date());
+  panel.innerHTML = `
+    <div class="section-label">今月発生予定</div>
+    <div class="card">
+      <div id="largeThisMonth"></div>
+    </div>
+
+    <button class="btn btn-primary btn-block" onclick="openLargeForm()">
+      <svg width="16" height="16" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+      定期入出金を登録
+    </button>
+
+    <div class="section-label">登録済み一覧</div>
+    <div class="card">
+      <div class="filter-row" id="largeFilterRow"></div>
+      <div id="largeList"></div>
+    </div>
+  `;
+  renderLargeThisMonth(mk);
+  renderLargeFilterRow();
+  renderLargeList();
+}
+
+function renderLargeThisMonth(mk){
+  const el = document.getElementById('largeThisMonth');
+  const items = largeExpensesForMonth(mk);
+  if(items.length===0){
+    el.innerHTML = `<div class="empty-state">
+      <div class="et">今月の発生予定はありません</div>
+      <div class="es">${monthLabel(mk)}に発生する定期入出金はまだ登録されていません</div>
+    </div>`;
+    return;
+  }
+  let net = 0;
+  const rows = items.map(e=>{
+    const amt = amountForExpenseInMonth(e, mk);
+    const isIncome = (e.transactionType||'withdraw')==='deposit';
+    net += isIncome ? amt : -amt;
+    const linkedCard = e.cardId ? findCard(e.cardId) : null;
+    const iconClass = linkedCard ? 'credit' : (isIncome ? 'deposit' : 'withdraw');
+    const iconSvg = linkedCard ? ICON_CARD : ICON_BANK;
+    return `
+    <div class="entry" data-detail-tap="large:${e.id}" style="cursor:pointer;">
+      <div class="entry-icon ${iconClass}">${iconSvg}</div>
+      <div class="entry-main">
+        <div class="entry-title">${escapeHtml(e.name)} <span class="tiny-tag ${e.type}">${typeLabel(e.type)}</span></div>
+        <div class="entry-sub">${FREQ_LABEL[e.frequency]}</div>
+      </div>
+      <div class="entry-amount ${isIncome?'in':'out'} num">${isIncome?'+':'-'}${yen(amt)}</div>
+    </div>`;
+  }).join('');
+  el.innerHTML = rows + `
+    <div class="acct-total-row">
+      <span class="acct-total-label">今月合計（収支）</span>
+      <span class="acct-total-value num">${yenSigned(net)}</span>
+    </div>
+  `;
+}
+
+function renderLargeFilterRow(){
+  const el = document.getElementById('largeFilterRow');
+  const filters = [['all','すべて'],['personal','個人'],['household','家計']];
+  el.innerHTML = filters.map(([key,label])=>
+    `<button class="filter-chip ${largeListFilter===key?'active':''}" onclick="setLargeFilter('${key}')">${label}</button>`
+  ).join('');
+}
+function setLargeFilter(key){
+  largeListFilter = key;
+  renderLargeFilterRow();
+  renderLargeList();
+}
+
+function renderLargeList(){
+  const el = document.getElementById('largeList');
+  let items = DB.largeExpenses.slice();
+  if(largeListFilter!=='all') items = items.filter(e=>e.type===largeListFilter);
+  items.sort((a,b)=> a.name.localeCompare(b.name,'ja'));
+  if(items.length===0){
+    el.innerHTML = `<div class="empty-state">
+      <svg viewBox="0 0 24 24" stroke-width="1.6" stroke="currentColor" fill="none"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/></svg>
+      <div class="et">登録された定期入出金がありません</div>
+      <div class="es">給与・家賃・税金・積立など、繰り返し発生する収支を登録しましょう</div>
+    </div>`;
+    return;
+  }
+  const swipeHint = `<div class="swipe-hint">
+    <svg viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    左にスワイプして操作
+  </div>`;
+  el.innerHTML = swipeHint + items.map(e=>{
+    const acct = findAccount(e.accountId);
+    const isIncome = (e.transactionType||'withdraw')==='deposit';
+    const isSpotItem = e.frequency === 'spot';
+    const freqDesc = e.frequency==='custom'
+      ? `任意月指定(${(e.customMonths||[]).slice().sort((a,b)=>a-b).join(',')}月)`
+      : FREQ_LABEL[e.frequency];
+    const amtLabel = (e.amountMode==='perMonth') ? '月により異なる' : yen(e.amount);
+    const endLabel = (!isSpotItem && e.endDate) ? `〜${fmtDateShort(e.endDate)}` : '';
+    const dateLabel = isSpotItem ? '発生' : '開始';
+    const linkedCard = e.cardId ? findCard(e.cardId) : null;
+    const cardBadge = linkedCard
+      ? `<span class="tiny-tag" style="background:var(--coral-tint);color:var(--coral); display:inline-flex; align-items:center; gap:2px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>${escapeHtml(linkedCard.name)}</span>`
+      : '';
+    return `
+    <div class="entry-wrap" data-entry-id="${e.id}" data-entry-kind="large">
+      <div class="entry" data-detail-tap="large:${e.id}">
+        <div class="entry-icon ${linkedCard?'credit':(isIncome?'deposit':'withdraw')}">${linkedCard ? ICON_CARD : ICON_BANK}</div>
+        <div class="entry-main">
+          <div class="entry-title">${escapeHtml(e.name)}
+            <span class="tiny-tag ${e.type}">${typeLabel(e.type)}</span>
+            ${e.active===false ? '<span class="tiny-tag" style="background:#eee;color:#999">停止中</span>' : ''}
+            ${e._autoDeactivatedReason ? `<span class="tiny-tag" style="background:var(--coral-tint); color:var(--coral);">⚠️ 自動停止</span>` : ''}
+          </div>
+          <div class="entry-sub">${freqDesc}・${dateLabel}${fmtDateShort(e.startDate)}${endLabel}${cardBadge ? '・'+cardBadge : '・'+(acct?escapeHtml(acct.name):'(削除済み)')}</div>
+        </div>
+        <div class="entry-amount ${isIncome?'in':'out'} num">${amtLabel}</div>
+      </div>
+      <div class="entry-actions">
+        <button class="entry-action-btn act-edit" onclick="openLargeForm('${e.id}')">
+          ${ICON_EDIT}<span>編集</span>
+        </button>
+        <button class="entry-action-btn act-copy" onclick="duplicateLargeExpense('${e.id}')">
+          ${ICON_COPY}<span>複製</span>
+        </button>
+        <button class="entry-action-btn act-del" onclick="deleteLargeExpense('${e.id}')">
+          ${ICON_DEL}<span>削除</span>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- 定期入出金タップ詳細モーダル ---------- */
+function openLargeEntryDetail(id){
+  const e = DB.largeExpenses.find(x=>x.id===id);
+  if(!e) return;
+  const acct = findAccount(e.accountId);
+  const linkedCard = e.cardId ? findCard(e.cardId) : null;
+  const isIncome = (e.transactionType||'withdraw')==='deposit';
+  const isSpotItem = e.frequency === 'spot';
+  const freqDesc = e.frequency==='custom'
+    ? `任意月指定（${(e.customMonths||[]).slice().sort((a,b)=>a-b).join('・')}月）`
+    : FREQ_LABEL[e.frequency];
+  const periodLabel = isSpotItem
+    ? fmtDateShort(e.startDate)
+    : `${fmtDateShort(e.startDate)} 〜 ${e.endDate ? fmtDateShort(e.endDate) : '期限なし'}`;
+  const mk = monthKey(new Date());
+  const amtLabel = (e.amountMode==='perMonth') ? `月により異なる（今月：${yen(amountForExpenseInMonth(e, mk))}）` : yen(e.amount);
+
+  openModal(`
+    ${modalHeader('定期入出金')}
+    <div style="text-align:center; padding:10px 0 18px;">
+      <div style="font-size:16px; color:var(--ink); font-weight:700; margin-bottom:6px;">${escapeHtml(e.name)}</div>
+      <div class="num" style="font-size:32px; font-weight:700; color:${isIncome?'var(--green)':'var(--coral)'}; line-height:1.1;">${isIncome?'+':'-'}${amtLabel}</div>
+      <div style="margin-top:8px; display:flex; gap:6px; justify-content:center; flex-wrap:wrap;">
+        <span class="tiny-tag ${e.type}" style="font-size:12px; padding:3px 8px;">${typeLabel(e.type)}</span>
+        ${e.active===false ? '<span class="tiny-tag" style="background:#eee;color:#999; font-size:12px; padding:3px 8px;">停止中</span>' : ''}
+        ${e._autoDeactivatedReason ? `<span class="tiny-tag" style="background:var(--coral-tint); color:var(--coral); font-size:12px; padding:3px 8px;">⚠️ 自動停止</span>` : ''}
+      </div>
+    </div>
+    <div style="border-top:1px solid var(--line); margin-bottom:4px;"></div>
+    <div class="modal-detail-summary-row">
+      <span style="font-size:13px; color:var(--ink-soft); font-weight:600;">頻度</span>
+      <span style="font-size:14px; font-weight:600;">${escapeHtml(freqDesc)}</span>
+    </div>
+    <div class="modal-detail-summary-row" style="align-items:flex-start;">
+      <span style="font-size:13px; color:var(--ink-soft); font-weight:600; padding-top:1px;">${isSpotItem ? '発生日' : '期間'}</span>
+      <span style="font-size:14px; font-weight:600; line-height:1.5; text-align:right; max-width:62%;">${periodLabel}</span>
+    </div>
+    ${linkedCard ? `
+    <div class="modal-detail-summary-row">
+      <span style="font-size:13px; color:var(--ink-soft); font-weight:600;">連携カード</span>
+      <span style="font-size:14px; font-weight:600;">${escapeHtml(linkedCard.name)}</span>
+    </div>` : `
+    <div class="modal-detail-summary-row">
+      <span style="font-size:13px; color:var(--ink-soft); font-weight:600;">口座</span>
+      <span style="font-size:14px; font-weight:600;">${escapeHtml(acct ? acct.name : '（削除済み）')}</span>
+    </div>`}
+    ${e.mainCategory ? `
+    <div class="modal-detail-summary-row">
+      <span style="font-size:13px; color:var(--ink-soft); font-weight:600;">カテゴリ</span>
+      <span style="font-size:14px;">${escapeHtml(e.mainCategory)}${e.subCategory ? '　/　'+escapeHtml(e.subCategory) : ''}</span>
+    </div>` : ''}
+    ${e.memo ? `
+    <div class="modal-detail-summary-row" style="border-bottom:none;">
+      <span style="font-size:13px; color:var(--ink-soft); font-weight:600;">メモ</span>
+      <span style="font-size:14px;">${escapeHtml(e.memo)}</span>
+    </div>` : ''}
+    <div class="form-actions" style="margin-top:20px;">
+      <button class="btn btn-primary" onclick="closeModal(); openLargeForm('${e.id}')">編集</button>
+      <button class="btn btn-ghost" onclick="closeModal(); duplicateLargeExpense('${e.id}')">複製</button>
+      <button class="btn btn-ghost" onclick="deleteLargeExpense('${e.id}')">削除</button>
+    </div>
+  `);
+}
+
+function openLargeForm(editId){
+  const editing = editId ? DB.largeExpenses.find(e=>e.id===editId) : null;
+  const type = editing ? editing.type : 'personal';
+  const state = {
+    name: editing ? editing.name : '',
+    transactionType: editing ? (editing.transactionType||'withdraw') : 'withdraw',
+    amount: editing ? editing.amount : '',
+    startDate: editing ? editing.startDate : todayISO(),
+    endDate: editing ? (editing.endDate||'') : '',
+    frequency: editing ? editing.frequency : 'monthly',
+    customMonths: editing ? (editing.customMonths||[]).slice() : [],
+    amountMode: editing ? (editing.amountMode||'uniform') : 'uniform',
+    monthlyAmounts: editing ? Object.assign({}, editing.monthlyAmounts||{}) : {},
+    type: type,
+    accountId: editing ? editing.accountId : (mainAccount()||{}).id,
+    cardId: editing ? (editing.cardId||'') : '',
+    memo: editing ? editing.memo : '',
+    active: editing ? (editing.active !== false) : true,
+  };
+
+  function body(){
+    const freqOptions = [['monthly','毎月'],['bimonthly','2か月ごと'],['quarterly','3か月ごと'],['semiannual','半年ごと'],['annual','年1回'],['spot','スポット'],['custom','任意月指定']];
+    const isCustom = state.frequency === 'custom';
+    const isSpot = state.frequency === 'spot';
+    const usePerMonth = isCustom && state.amountMode === 'perMonth';
+    const sortedMonths = (state.customMonths||[]).slice().sort((a,b)=>a-b);
+
+    return `
+      ${modalHeader(editing ? '定期入出金を編集' : '定期入出金を登録')}
+      <div class="field">
+        <label>名称<span class="req">*</span></label>
+        <input type="text" id="lf_name" placeholder="例：給与、家賃、固定資産税" value="${escapeHtml(state.name)}">
+      </div>
+      <div class="field">
+        <label>種別<span class="req">*</span></label>
+        <div class="segmented">
+          <button type="button" class="${state.transactionType==='deposit'?'active':''}" onclick="largeFormSetTxnType('deposit')">入金（収入）</button>
+          <button type="button" class="${state.transactionType==='withdraw'?'active':''}" onclick="largeFormSetTxnType('withdraw')">出金（支出）</button>
+        </div>
+      </div>
+      ${state.transactionType==='withdraw' ? `
+      <div class="field">
+        <label>カード支払い</label>
+        <div class="chip-group">
+          <button type="button" class="chip ${!state.cardId?'active':''}" onclick="largeFormSetCard('')">なし（口座直払い）</button>
+          ${DB.cards.filter(c=>!c.hidden).map(c=>`<button type="button" class="chip ${state.cardId===c.id?'active':''}" onclick="largeFormSetCard('${c.id}')">${escapeHtml(c.name)}</button>`).join('')}
+        </div>
+        ${state.cardId ? `<div class="helper-text" style="margin-top:8px; margin-bottom:0;">💡 カードを選択すると、毎月ホームのカード明細一覧に自動登録されます。</div>` : ''}
+      </div>` : ''}
+      <div class="field">
+        <label>区分<span class="req">*</span></label>
+        <div class="segmented">
+          <button type="button" class="${state.type==='personal'?'active':''}" onclick="largeFormSetType('personal')">個人</button>
+          <button type="button" class="${state.type==='household'?'active':''}" onclick="largeFormSetType('household')">家計</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>${state.cardId ? '引落口座' : '口座'}<span class="req">*</span></label>
+        <select id="lf_account">
+          ${DB.accounts.map(a=>`<option value="${a.id}" ${state.accountId===a.id?'selected':''}>${escapeHtml(a.name)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>頻度<span class="req">*</span></label>
+        <div class="chip-group">
+          ${freqOptions.map(([k,l])=>`<button type="button" class="chip ${state.frequency===k?'active':''}" onclick="largeFormSetFreq('${k}')">${l}</button>`).join('')}
+        </div>
+        ${isSpot ? '<div class="helper-text" style="margin-top:10px; margin-bottom:0;">「スポット」は旅行・家電購入など、繰り返さず1回だけ発生する収支に使います。発生日のみを設定してください。</div>' : ''}
+      </div>
+      ${isCustom ? `
+      <div class="field">
+        <label>対象月（複数選択可）<span class="req">*</span></label>
+        <div class="chip-group">
+          ${[1,2,3,4,5,6,7,8,9,10,11,12].map(mn=>`<button type="button" class="chip ${state.customMonths.includes(mn)?'active':''}" onclick="largeFormToggleMonth(${mn})">${mn}月</button>`).join('')}
+        </div>
+      </div>
+      <div class="field">
+        <label>金額設定方式</label>
+        <div class="segmented">
+          <button type="button" class="${state.amountMode==='uniform'?'active':''}" onclick="largeFormSetAmountMode('uniform')">均一金額</button>
+          <button type="button" class="${state.amountMode==='perMonth'?'active':''}" onclick="largeFormSetAmountMode('perMonth')">月別個別金額</button>
+        </div>
+      </div>` : ''}
+      ${usePerMonth ? `
+      <div class="field">
+        <label>月別金額<span class="req">*</span></label>
+        ${sortedMonths.length===0 ? '<div class="helper-text">先に対象月を選択してください</div>' : `
+          <div class="helper-text" style="margin-top:0;">ここで設定した金額は、開始日〜終了日の期間中、同じ月であれば毎年同額が適用されます（例：2025年12月と2026年12月は同じ金額になります）。年によって金額を変えたい場合は、開始日・終了日を1年単位で区切って複数登録してください。</div>
+          ${sortedMonths.map(mn=>`
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+              <span style="width:34px; font-size:13px; color:var(--ink-soft); flex-shrink:0;">${mn}月</span>
+              <input type="number" inputmode="numeric" placeholder="0" id="lf_monthAmt_${mn}" value="${state.monthlyAmounts[mn]!=null?state.monthlyAmounts[mn]:''}">
+            </div>
+          `).join('')}
+        `}
+      </div>` : `
+      <div class="field">
+        <label>金額<span class="req">*</span></label>
+        <input type="number" id="lf_amount" inputmode="numeric" placeholder="0" value="${state.amount}">
+      </div>`}
+      <div class="field">
+        <label>${isSpot ? '発生日' : '開始日'}<span class="req">*</span></label>
+        <input type="date" id="lf_startDate" value="${state.startDate}" min="1900-01-01" max="2099-12-31">
+      </div>
+      ${isSpot ? '' : `
+      <div class="field">
+        <label>終了日</label>
+        <input type="date" id="lf_endDate" value="${state.endDate}" min="1900-01-01" max="2099-12-31">
+      </div>`}
+      <div class="field">
+        <label>メモ</label>
+        <textarea id="lf_memo">${escapeHtml(state.memo)}</textarea>
+      </div>
+      ${editing ? `
+      <div class="field">
+        <label>状態</label>
+        <div class="segmented">
+          <button type="button" class="${state.active?'active':''}" onclick="largeFormSetActive(true)">有効</button>
+          <button type="button" class="${!state.active?'active':''}" onclick="largeFormSetActive(false)">停止</button>
+        </div>
+      </div>` : ''}
+      <div class="form-actions">
+        ${editing ? `<button class="btn btn-ghost" onclick="deleteLargeExpense('${editing.id}')">削除</button>` : ''}
+        <button class="btn btn-primary" onclick="submitLargeForm(${editing? `'${editing.id}'`:'null'})">${editing?'更新する':'登録する'}</button>
+      </div>
+    `;
+  }
+
+  window._largeFormState = state;
+  window.largeFormSetTxnType = (t)=>{ state.transactionType=t; if(t==='deposit') state.cardId=''; openModal(body()); captureLargeFormInputs(); };
+  window.largeFormSetCard = (id)=>{ state.cardId=id; openModal(body()); captureLargeFormInputs(); };
+  window.largeFormSetFreq = (k)=>{
+    state.frequency=k;
+    if(k!=='custom'){ state.amountMode='uniform'; }
+    if(k==='spot'){ state.endDate=''; }
+    openModal(body()); captureLargeFormInputs();
+  };
+  window.largeFormToggleMonth = (m)=>{
+    const idx = state.customMonths.indexOf(m);
+    if(idx>=0) state.customMonths.splice(idx,1); else state.customMonths.push(m);
+    openModal(body()); captureLargeFormInputs();
+  };
+  window.largeFormSetAmountMode = (mode)=>{ state.amountMode=mode; openModal(body()); captureLargeFormInputs(); };
+  window.largeFormSetType = (t)=>{ state.type=t; openModal(body()); captureLargeFormInputs(); };
+  window.largeFormSetActive = (v)=>{ state.active=v; openModal(body()); captureLargeFormInputs(); };
+
+  function captureLargeFormInputs(){
+    const nameEl = document.getElementById('lf_name');
+    const amtEl = document.getElementById('lf_amount');
+    const dateEl = document.getElementById('lf_startDate');
+    const endDateEl = document.getElementById('lf_endDate');
+    const acctEl = document.getElementById('lf_account');
+    const memoEl = document.getElementById('lf_memo');
+    if(nameEl) nameEl.oninput = ()=>state.name = nameEl.value;
+    if(amtEl) amtEl.oninput = ()=>state.amount = amtEl.value;
+    if(dateEl) dateEl.oninput = ()=>state.startDate = dateEl.value;
+    if(endDateEl) endDateEl.oninput = ()=>state.endDate = endDateEl.value;
+    if(acctEl) acctEl.oninput = ()=>state.accountId = acctEl.value;
+    if(memoEl) memoEl.oninput = ()=>state.memo = memoEl.value;
+    (state.customMonths||[]).forEach(m=>{
+      const el = document.getElementById('lf_monthAmt_'+m);
+      if(el) el.oninput = ()=>{ state.monthlyAmounts[m] = el.value; };
+    });
+  }
+
+  openModal(body());
+  captureLargeFormInputs();
+}
+
+function submitLargeForm(editId){
+  const s = window._largeFormState;
+  if(!s.name || !s.name.trim()){ showToast('名称を入力してください'); return; }
+  if(!s.startDate){ showToast('開始日を入力してください'); return; }
+  if(s.endDate && s.endDate < s.startDate){ showToast('終了日は開始日以降にしてください'); return; }
+  if(!s.accountId){ showToast('口座を選択してください'); return; }
+  if(s.frequency==='custom' && (!s.customMonths || s.customMonths.length===0)){ showToast('対象月を選択してください'); return; }
+
+  let amount = 0;
+  let monthlyAmounts = {};
+  const usePerMonth = s.frequency==='custom' && s.amountMode==='perMonth';
+  if(usePerMonth){
+    for(const m of s.customMonths){
+      const v = Number(s.monthlyAmounts[m]);
+      if(!v || v<=0){ showToast(`${m}月の金額を入力してください`); return; }
+      monthlyAmounts[m] = v;
+    }
+  }else{
+    if(!s.amount || Number(s.amount)<=0){ showToast('金額を入力してください'); return; }
+    amount = Number(s.amount);
+  }
+
+  const payload = {
+    name:s.name.trim(), transactionType:s.transactionType, amount, startDate:s.startDate, endDate:s.endDate||'',
+    frequency:s.frequency, customMonths: s.frequency==='custom' ? s.customMonths.slice() : [],
+    amountMode: usePerMonth ? 'perMonth' : 'uniform', monthlyAmounts,
+    type:s.type,
+    accountId:s.accountId, cardId: s.transactionType==='withdraw' ? (s.cardId||'') : '', memo:s.memo,
+  };
+
+  if(editId){
+    const exp = DB.largeExpenses.find(e=>e.id===editId);
+    const cardChanged     = (exp.cardId||'') !== (payload.cardId||'');
+    const amountChanged   = String(exp.amount||'') !== String(payload.amount||'')
+                         || JSON.stringify(exp.monthlyAmounts||{}) !== JSON.stringify(payload.monthlyAmounts||{})
+                         || exp.amountMode !== payload.amountMode;
+    const scheduleChanged = exp.frequency !== payload.frequency
+                         || exp.startDate !== payload.startDate
+                         || (exp.endDate||'') !== (payload.endDate||'')
+                         || JSON.stringify((exp.customMonths||[]).slice().sort()) !== JSON.stringify((payload.customMonths||[]).slice().sort());
+    touchRecord(Object.assign(exp, payload, { active: s.active }));
+    // カード・金額・頻度・期間のいずれかが変わった場合、自動生成済みエントリを全削除して再生成
+    if(cardChanged || amountChanged || scheduleChanged){
+      DB.creditEntries = DB.creditEntries.filter(e=>
+        !(e.largeExpenseId===editId)
+      );
+    }
+  }else{
+    DB.largeExpenses.push(stampNew(Object.assign({id: uid('le')}, payload, {active:true})));
+  }
+  const ok = saveData();
+  if(ok) runLargeExpenseCreditCatchUp();
+  closeModal();
+  renderLarge(); renderHome(); renderSummary();
+  if(!ok){
+    showToast('定期入出金の更新に失敗しました(保存エラー)');
+  } else {
+    showToast(editId ? '定期入出金を更新しました' : '定期入出金を登録しました');
+  }
+}
+
+function deleteLargeExpense(id){
+  const exp = DB.largeExpenses.find(e=>e.id===id);
+  const hasGenerated = exp && exp.cardId && DB.creditEntries.some(e=>e.largeExpenseId===id);
+  const msg = hasGenerated
+    ? 'この定期入出金を削除しますか？自動生成されたカード明細もすべて削除されます。'
+    : 'この定期入出金を削除しますか？';
+  askConfirm(msg, ()=>{
+    if(hasGenerated){
+      DB.creditEntries = DB.creditEntries.filter(e=>e.largeExpenseId!==id);
+    }
+    DB.largeExpenses = DB.largeExpenses.filter(e=>e.id!==id);
+    saveData();
+    closeModal();
+    renderLarge(); renderHome(); renderSummary();
+  });
+}
+
+/* =========================================================================
+   SUMMARY TAB (サマリ)
+   ========================================================================= */
+
+
+/* ---- フィルタ付き集計ヘルパー ---- */
+// summaryTypeFilter に応じてクレカ明細・定期入出金を絞り込む
+function filteredCreditEntries(entries){ return summaryTypeFilter==='all' ? entries : entries.filter(e=>e.type===summaryTypeFilter); }
+function filteredLargeExpenses(expenses){ return summaryTypeFilter==='all' ? expenses : expenses.filter(e=>e.type===summaryTypeFilter); }
+
+// フィルタ付き月次クレカ利用合計
+function creditTotalForMonthF(mk){ return filteredCreditEntries(creditEntriesForMonth(mk)).reduce((s,e)=>s+Number(e.amount||0),0); }
+// フィルタ付き引落合計（引落月ベース）
+function creditSettlementTotalForMonthF(mk){ return filteredCreditEntries(DB.creditEntries).filter(e=>entrySettlementMonthKey(e)===mk).reduce((s,e)=>s+Number(e.amount||0),0); }
+// フィルタ付き定期支出合計（カード連携済みは除外：creditEntry側で計上済み）
+function recurringExpenseTotalForMonthF(mk){ return filteredLargeExpenses(largeExpensesForMonth(mk)).filter(e=>(e.transactionType||'withdraw')==='withdraw' && !e.cardId).reduce((s,e)=>s+amountForExpenseInMonth(e,mk),0); }
+// フィルタ付き定期収入合計
+function recurringIncomeTotalForMonthF(mk){ return filteredLargeExpenses(largeExpensesForMonth(mk)).filter(e=>(e.transactionType||'withdraw')==='deposit').reduce((s,e)=>s+amountForExpenseInMonth(e,mk),0); }
+
+function setSummaryTypeFilter(t){ summaryTypeFilter=t; forecastAccountFilter=null; renderSummary(); }
+
+function renderSummary(){
+  const panel = document.getElementById('panel-summary');
+  const filterLabels = [['all','全体'],['personal','個人'],['household','家計']];
+  panel.innerHTML = `
+    <div class="month-nav">
+      <button class="mn-btn" onclick="shiftSummaryMonth(-1)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+      <div class="mn-label">${monthLabel(summaryMonth)}</div>
+      <button class="mn-btn" onclick="shiftSummaryMonth(1)"><svg viewBox="0 0 24 24" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-bottom:4px;">
+      ${filterLabels.map(([key,label])=>`<button class="filter-chip ${summaryTypeFilter===key?'active':''}" style="flex:1; text-align:center;" onclick="setSummaryTypeFilter('${key}')">${label}</button>`).join('')}
+    </div>
+    ${summaryTypeFilter!=='all'?`<div class="helper-text" style="text-align:center; margin-bottom:4px;">表示中：<strong>${summaryTypeFilter==='personal'?'個人':'家計'}</strong>の収支のみ</div>`:''}
+
+    <div class="section-label">今月の利用内訳</div>
+    <div class="card" id="creditUsageBreakdown"></div>
+
+    <div class="section-label">月次サマリ</div>
+    <div class="card">
+      <div id="monthlySummaryCard"></div>
+    </div>
+
+    <div class="section-label">カード別引落サマリ</div>
+    <div class="card" style="overflow-x:auto;">
+      <div id="cardSettlementTable"></div>
+    </div>
+
+    <div class="section-label">年間サマリ${summaryTypeFilter!=='all'?`<span style="font-size:11px; color:var(--teal); font-weight:600; margin-left:6px;">${summaryTypeFilter==='personal'?'個人':'家計'}分のみ</span>`:''}
+    </div>
+    <div class="card" style="overflow-x:auto;">
+      <div id="annualTable"></div>
+    </div>
+
+    <div class="section-label">口座残高予測（12か月）${summaryTypeFilter!=='all'?`<span style="font-size:11px; color:var(--teal); font-weight:600; margin-left:6px;">${summaryTypeFilter==='personal'?'個人':'家計'}分のみ</span>`:''}
+    </div>
+    <div class="card">
+      <div id="balanceForecast"></div>
+    </div>
+  `;
+  renderCreditUsageBreakdown();
+  renderMonthlySummaryCard();
+  renderCardSettlementTable();
+  renderAnnualTable();
+  renderBalanceForecast();
+}
+
+/* =========================================================================
+   今月の利用内訳 — カード別 ＋ 個人/家計 の2ブロック構成
+   ========================================================================= */
+function renderCreditUsageBreakdown(){
+  const el = document.getElementById('creditUsageBreakdown');
+  if(!el) return;
+
+  const mk = summaryMonth;
+  const [, tm] = mk.split('-').map(Number);
+
+  // フィルタ適用済みの当月明細（利用日ベース）
+  const entries = filteredCreditEntries(creditEntriesForMonth(mk));
+  const total   = entries.reduce((s,e)=>s+Number(e.amount||0), 0);
+  const count   = entries.length;
+
+  if(count === 0){
+    el.innerHTML = `<div class="empty-state">
+      <div class="et">${tm}月のカード利用がありません</div>
+      <div class="es">ホームタブからカード明細を登録すると、ここに内訳が表示されます</div>
+    </div>`;
+    return;
+  }
+
+  // ── カード別集計 ──
+  const cardMap = {};
+  entries.forEach(e=>{
+    if(!cardMap[e.cardId]) cardMap[e.cardId] = { amount:0, count:0 };
+    cardMap[e.cardId].amount += Number(e.amount||0);
+    cardMap[e.cardId].count  += 1;
+  });
+  const cardRows = Object.entries(cardMap)
+    .map(([cardId, v])=>({ card: findCard(cardId), ...v }))
+    .sort((a,b)=>b.amount - a.amount);
+
+  // ── 個人/家計別集計 ──
+  let personalAmt = 0, householdAmt = 0;
+  let personalCnt = 0, householdCnt = 0;
+  entries.forEach(e=>{
+    if(e.type==='personal'){ personalAmt += Number(e.amount||0); personalCnt++; }
+    else { householdAmt += Number(e.amount||0); householdCnt++; }
+  });
+
+  function rowHTML(label, amount, cnt){
+    return `
+      <div style="display:flex; justify-content:space-between; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--line);">
+        <span style="font-size:13.5px; font-weight:600;">${escapeHtml(label)}</span>
+        <span style="text-align:right;">
+          <span class="num" style="font-size:15px; font-weight:700; color:var(--coral);">${yen(amount)}</span>
+          ${cnt != null ? `<span style="font-size:13px; color:var(--ink-soft); margin-left:5px;">${cnt}件</span>` : ''}
+        </span>
+      </div>`;
+  }
+
+  const cardBlock = cardRows.map(r=>
+    rowHTML(r.card ? r.card.name : '(削除済みカード)', r.amount, r.count)
+  ).join('');
+
+  const typeBlock = [
+    personalAmt > 0 ? rowHTML('個人', personalAmt, personalCnt) : '',
+    householdAmt > 0 ? rowHTML('家計', householdAmt, householdCnt) : '',
+  ].join('');
+
+  el.innerHTML = `
+    <!-- 合計 -->
+    <div style="margin-bottom:14px;">
+      <div style="font-size:11px; font-weight:700; color:var(--ink-soft); margin-bottom:3px;">${tm}月の利用合計</div>
+      <div style="display:flex; align-items:baseline; gap:6px;">
+        <span class="num" style="font-size:26px; font-weight:700; color:var(--ink); line-height:1;">${yen(total)}</span>
+        <span style="font-size:14px; font-weight:600; color:var(--ink-soft);">${count}件</span>
+      </div>
+    </div>
+
+    <div style="height:1px; background:var(--line); margin-bottom:14px;"></div>
+
+    <!-- カード別 -->
+    <div style="font-size:11px; font-weight:700; color:var(--ink-soft); letter-spacing:0.05em; margin-bottom:2px;">カード別</div>
+    ${cardBlock}
+
+    <!-- 個人 / 家計 -->
+    ${(personalAmt > 0 || householdAmt > 0) ? `
+    <div style="font-size:11px; font-weight:700; color:var(--ink-soft); letter-spacing:0.05em; margin-top:16px; margin-bottom:2px;">個人 / 家計</div>
+    ${typeBlock}` : ''}
+  `;
+}
+
+/* =========================================================================
+   6-1  月次サマリ
+   クレカ利用額・クレカ引落額・定期支出・定期収入・入出金差額・月末予測残高
+   の6項目を選択月単位で表示する。
+   ========================================================================= */
+function renderMonthlySummaryCard(){
+  const el = document.getElementById('monthlySummaryCard');
+  if(!el) return;
+  const mk = summaryMonth;
+
+  const creditUsage    = creditTotalForMonthF(mk);              // クレカ利用額（利用日ベース）
+  const creditSettled  = creditSettlementTotalForMonthF(mk);    // クレカ引落額（引落月ベース）
+  const recurExpense   = recurringExpenseTotalForMonthF(mk);    // 定期支出
+  const recurIncome    = recurringIncomeTotalForMonthF(mk);     // 定期収入
+
+  // 入出金差額：bankEntriesの入金合計 - 出金合計（bankEntriesはtype区分なしのためフィルタ対象外）
+  let bankIn = 0, bankOut = 0;
+  bankEntriesForMonth(mk).forEach(e=>{
+    if(e.transactionType==='deposit') bankIn += Number(e.amount||0);
+    else bankOut += Number(e.amount||0);
+  });
+  const bankDiff = bankIn - bankOut;
+
+  // 月末予測残高：現在残高 から 当月末までの累積変動を計算
+  const today = new Date();
+  const baseMk = monthKey(today);
+  let forecast = totalBalance();
+  const [sy, sm] = mk.split('-').map(Number);
+  const [by, bm] = baseMk.split('-').map(Number);
+  const monthDiff = (sy - by) * 12 + (sm - bm);
+  // 月末予測残高：通常入出金（bankEntries）のうち date<=本日 のものは登録時点で
+  // totalBalance() に反映済み。未来日分（appliedToBalance=false）は保留されて
+  // totalBalance() に含まれていないため、ここでは futureBankNetForMonth(imk)
+  // で保留分のみを月ごとに積み上げる（pendingBankEntries()がappliedToBalance:
+  // falseのみを対象にしているため、反映済み分との二重計算にはならない）。
+  if(monthDiff >= 0){
+    for(let i = 0; i <= monthDiff; i++){
+      const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+      const imk = monthKey(d);
+      forecast += recurringIncomeTotalForMonthF(imk)
+               - recurringExpenseTotalForMonthF(imk)
+               - creditSettlementTotalForMonthF(imk)
+               + futureBankNetForMonth(imk);
+    }
+  } else {
+    for(let i = 0; i >= monthDiff; i--){
+      const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+      const imk = monthKey(d);
+      forecast -= recurringIncomeTotalForMonthF(imk)
+               - recurringExpenseTotalForMonthF(imk)
+               - creditSettlementTotalForMonthF(imk)
+               + futureBankNetForMonth(imk);
+    }
+  }
+
+  // 6項目の定義
+  const items = [
+    { label:'クレカ利用額',   value: creditUsage,   color:'var(--coral)',    sign:-1, note:'利用日ベース' },
+    { label:'クレカ引落額',   value: creditSettled, color:'var(--coral)',    sign:-1, note:'引落月ベース' },
+    { label:'定期支出',       value: recurExpense,  color:'var(--coral)',    sign:-1, note:'' },
+    { label:'定期収入',       value: recurIncome,   color:'var(--green)',    sign:+1, note:'' },
+    { label:'入出金差額',     value: bankDiff,      color: bankDiff>=0?'var(--green)':'var(--coral)', sign:0, note: summaryTypeFilter==='all' ? '入金－出金' : '入金－出金（フィルタ対象外）' },
+    { label:'月末予測残高',   value: forecast,      color: forecast>=0?'var(--teal-deep)':'var(--coral)', sign:0, note: summaryTypeFilter==='all'?'定期・引落反映後':`${summaryTypeFilter==='personal'?'個人':'家計'}分のみ反映（口座残高は全体共通）`, large:true },
+  ];
+
+  el.innerHTML = `
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1px; background:var(--line); border-radius:10px; overflow:hidden;">
+      ${items.map((item, i)=>{
+        const isLarge = !!item.large;
+        const displayVal = item.sign === 1 ? (item.value>0 ? '+'+yen(item.value) : yen(0))
+                         : item.sign === -1 ? (item.value>0 ? '-'+yen(item.value) : yen(0))
+                         : (item.value > 0 ? '+' : '') + yen(item.value);
+        return `
+          <div style="background:var(--paper-raised); padding:13px 14px; ${isLarge?'grid-column:1/-1; border-top:1px solid var(--line);':''}">
+            <div style="font-size:11px; color:var(--ink-soft); font-weight:600; margin-bottom:4px;">
+              ${escapeHtml(item.label)}
+              ${item.note ? `<br><span style="font-weight:400; opacity:0.8;">（${escapeHtml(item.note)}）</span>` : ''}
+            </div>
+            <div class="num" style="font-size:${isLarge?'22px':'17px'}; font-weight:700; color:${item.color}; line-height:1.1;">
+              ${item.value===0 && item.sign!==0 ? '<span style="color:var(--ink-soft);">—</span>' : escapeHtml(displayVal)}
+            </div>
+          </div>`;
+      }).join('')}
+    </div>
+    ${summaryTypeFilter!=='all' ? `
+    <div class="helper-text" style="margin-top:10px; margin-bottom:0;">
+      ⚠️ <strong>${summaryTypeFilter==='personal'?'個人':'家計'}</strong>フィルタ中：口座残高（現在残高）は全体共通のため、フィルタの影響を受けません。クレカ・定期支出など差し引き対象のみ絞り込んでいます。
+    </div>` : ''}
+  `;
+}
+
+function shiftSummaryMonth(delta){
+  const [y,m] = summaryMonth.split('-').map(Number);
+  const d = new Date(y, m-1+delta, 1);
+  summaryMonth = monthKey(d);
+  renderSummary();
+}
+
+function renderAnnualTable(){
+  const el = document.getElementById('annualTable');
+  const [yearStr] = summaryMonth.split('-');
+  const year = Number(yearStr);
+  const thisMk = monthKey(new Date());
+  let rows = [];
+  let sums = {usage:0, settlement:0, recurExpense:0, recurIncome:0, totalExpense:0, netFlow:0};
+
+  for(let m=1; m<=12; m++){
+    const mk = `${year}-${String(m).padStart(2,'0')}`;
+    const usage       = creditTotalForMonthF(mk);
+    const settlement  = creditSettlementTotalForMonthF(mk);
+    const recurExpense= recurringExpenseTotalForMonthF(mk);
+    const recurIncome = recurringIncomeTotalForMonthF(mk);
+    const totalExpense= settlement + recurExpense;
+    const netFlow     = recurIncome - totalExpense; // 収支（プラスが黒字）
+    sums.usage+=usage; sums.settlement+=settlement;
+    sums.recurExpense+=recurExpense; sums.recurIncome+=recurIncome;
+    sums.totalExpense+=totalExpense; sums.netFlow+=netFlow;
+    rows.push({mk, m, usage, settlement, recurExpense, recurIncome, totalExpense, netFlow});
+  }
+
+  // セルの値をフォーマット（0の場合はグレーのダッシュ）
+  function cell(v, colorWhenPositive){
+    if(v === 0) return `<td class="num" style="color:var(--line);">—</td>`;
+    const color = colorWhenPositive || 'inherit';
+    return `<td class="num" style="color:${color};">${yen(v)}</td>`;
+  }
+  function cellSigned(v){
+    if(v === 0) return `<td class="num" style="color:var(--line);">—</td>`;
+    const color = v > 0 ? 'var(--green)' : 'var(--coral)';
+    return `<td class="num" style="color:${color}; font-weight:700;">${v>0?'+':''}${yen(v)}</td>`;
+  }
+
+  el.innerHTML = `
+    <div style="font-size:12px; color:var(--ink-soft); font-weight:700; margin-bottom:8px;">${year}年</div>
+    <table class="tbl" style="min-width:460px;">
+      <thead>
+        <tr>
+          <th>月</th>
+          <th>クレカ<br>利用</th>
+          <th>クレカ<br>引落</th>
+          <th>定期<br>支出</th>
+          <th>定期<br>収入</th>
+          <th>合計<br>支出</th>
+          <th>収支</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr class="${r.mk===thisMk?'current-month':''}">
+            <td>${r.m}月</td>
+            ${cell(r.usage)}
+            ${cell(r.settlement, 'var(--coral)')}
+            ${cell(r.recurExpense, 'var(--coral)')}
+            ${cell(r.recurIncome, 'var(--green)')}
+            ${cell(r.totalExpense, 'var(--coral)')}
+            ${cellSigned(r.netFlow)}
+          </tr>
+        `).join('')}
+        <tr class="total-row">
+          <td>合計</td>
+          <td class="num">${yen(sums.usage)}</td>
+          <td class="num" style="color:var(--coral);">${yen(sums.settlement)}</td>
+          <td class="num" style="color:var(--coral);">${yen(sums.recurExpense)}</td>
+          <td class="num" style="color:var(--green);">${yen(sums.recurIncome)}</td>
+          <td class="num" style="color:var(--coral);">${yen(sums.totalExpense)}</td>
+          <td class="num" style="color:${sums.netFlow>=0?'var(--green)':'var(--coral)'}; font-weight:700;">${sums.netFlow>0?'+':''}${yen(sums.netFlow)}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="helper-text" style="margin-top:10px; margin-bottom:0;">
+      合計支出 ＝ クレカ引落 ＋ 定期支出　　収支 ＝ 定期収入 − 合計支出　　クレカ利用は参考値（引落月と異なる）<br>※ 通常の入出金（入出金タブの登録）は含まれません。口座残高への直接の入出金は「入出金差額」を参照してください。
+    </div>
+  `;
+}
+
+/* =========================================================================
+   6-3  カード別引落サマリ
+   選択月に、カードごとの利用額（利用日ベース）と引落額（締め日ベース）を表示する。
+   ========================================================================= */
+function renderCardSettlementTable(){
+  const el = document.getElementById('cardSettlementTable');
+  if(!el) return;
+  const mk = summaryMonth;
+
+  // フィルタに応じてカードを絞り込む
+  const targetCards = summaryTypeFilter==='all' ? DB.cards : DB.cards.filter(c=>cardMatchesType(c,summaryTypeFilter));
+
+  if(targetCards.length === 0){
+    el.innerHTML = `<div class="empty-state"><div class="et">${summaryTypeFilter==='all'?'カードが未登録です':'この区分のカードがありません'}</div><div class="es">${summaryTypeFilter==='all'?'設定タブからカードを追加してください':'フィルタを「全体」に切り替えるか、設定タブでカードを追加してください'}</div></div>`;
+    return;
+  }
+
+  // カードごとに利用額・引落額を集計
+  const rows = targetCards.map(card=>{
+    const usage   = DB.creditEntries
+      .filter(e => e.cardId === card.id && isoToMonthKey(e.date) === mk)
+      .reduce((s,e)=>s+Number(e.amount||0), 0);
+    const settled = DB.creditEntries
+      .filter(e => e.cardId === card.id && entrySettlementMonthKey(e) === mk)
+      .reduce((s,e)=>s+Number(e.amount||0), 0);
+    return { card, usage, settled };
+  });
+
+  // 全カード合計
+  const totalUsage   = rows.reduce((s,r)=>s+r.usage, 0);
+  const totalSettled = rows.reduce((s,r)=>s+r.settled, 0);
+
+  if(totalUsage === 0 && totalSettled === 0){
+    el.innerHTML = `<div class="empty-state"><div class="et">この月のカード利用がありません</div><div class="es">ホームタブからカード明細を登録してください</div></div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <table class="tbl">
+      <thead>
+        <tr>
+          <th>カード</th>
+          <th>利用額</th>
+          <th>引落額</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r=>`
+          <tr>
+            <td>
+              <span style="font-size:13.5px; font-weight:600;">${escapeHtml(r.card.name)}</span>
+              <span style="margin-left:5px;">${cardTypeTagsHTML(r.card.type)}</span>
+              <div style="font-size:11px; color:var(--ink-soft); margin-top:2px;">${cardDayLabel(r.card.closingDay)}締・${cardDayLabel(r.card.paymentDay)}払</div>
+            </td>
+            <td class="num" style="color:var(--ink-soft);">${r.usage > 0 ? yen(r.usage) : '—'}</td>
+            <td class="num" style="color:var(--coral); font-weight:700;">${r.settled > 0 ? yen(r.settled) : '—'}</td>
+          </tr>
+        `).join('')}
+        <tr class="total-row">
+          <td>合計</td>
+          <td class="num">${yen(totalUsage)}</td>
+          <td class="num" style="color:var(--coral);">${yen(totalSettled)}</td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="helper-text" style="margin-top:10px; margin-bottom:0;">
+      利用額：${monthLabel(mk)}中の利用日ベース　引落額：${monthLabel(mk)}が引落月になる利用分
+    </div>
+  `;
+}
+
+/* =========================================================================
+   6-5  口座残高予測（12か月）
+   当月末から12か月先まで、月ごとの予測残高を折れ線グラフ＋テーブルで表示する。
+   --------
+   計算方式（B-03対応後・V2-19）：
+     通常入出金（bankEntries）のうち date<=本日 のものは登録の時点で
+     account.balance（totalBalance()）へ即時反映済み。date>本日（未来日）の
+     ものは appliedToBalance=false のまま保留され、totalBalance() には
+     含まれていない。そのため予測は「現在残高」を起点に、定期収入・
+     カード引落（引落月ベース）・定期支出・保留中の未来日入出金
+     （futureBankNetForMonth）を積み上げる。pendingBankEntries() が
+     appliedToBalance:false のみを対象にしているため、反映済み分との
+     二重計算は発生しない。
+     各月の純キャッシュ変動 = 定期収入 - カード引落(引落月ベース) - 定期支出 + 保留中入出金純額
+     予測残高[n月末] = totalBalance() + Σ(月0..n の純変動)
+   ② 口座別予測：口座タブで選択した口座の balance を起点に、
+     その口座に紐づく定期収支・クレカ引落・保留入出金だけで積み上げる。
+   ========================================================================= */
+function renderBalanceForecast(){
+  const el = document.getElementById('balanceForecast');
+  if(!el) return;
+
+  // 口座が1件もない場合のガード
+  if(DB.accounts.length === 0){
+    el.innerHTML = `<div class="empty-state"><div class="et">口座が登録されていません</div></div>`;
+    return;
+  }
+
+  // ── 口座タブを構築 ──────────────────────────────────────────────────────
+  // forecastAccountFilter が null = 全口座合計、accountId = 口座別
+  const tabs = [
+    { id: null, label: '全口座合計' },
+    ...DB.accounts.map(a => ({ id: a.id, label: a.name })),
+  ];
+  const tabsHTML = `
+    <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px;">
+      ${tabs.map(t => {
+        const active = forecastAccountFilter === t.id;
+        return `<button class="filter-chip ${active?'active':''}"
+          style="font-size:12px; padding:6px 12px;"
+          onclick="setForecastAccount(${t.id === null ? 'null' : `'${t.id}'`})"
+          >${escapeHtml(t.label)}</button>`;
+      }).join('')}
+    </div>`;
+
+  // ── データ生成 ──────────────────────────────────────────────────────────
+  const months = buildForecastMonths(forecastAccountFilter);
+
+  // 現在選択中の口座情報（口座別表示時のラベル表示用）
+  const selectedAcct = forecastAccountFilter ? findAccount(forecastAccountFilter) : null;
+
+  const balances = months.map(m=>m.endBalance);
+  const minBal = Math.min(...balances);
+  const maxBal = Math.max(...balances);
+  const range  = maxBal - minBal || 1;
+
+  // ===== 折れ線グラフ (SVG) =====
+  const W = 500, H = 120, PL = 8, PR = 8, PT = 12, PB = 20;
+  const gW = W - PL - PR;
+  const gH = H - PT - PB;
+  const stepX = gW / (months.length - 1);
+
+  function px(i){ return PL + i * stepX; }
+  function py(val){
+    const norm = (val - minBal) / range;
+    return PT + gH * (1 - norm);
+  }
+
+  // ゼロライン（残高がマイナスを通る場合）
+  let zeroLineHTML = '';
+  if(minBal < 0 && maxBal > 0){
+    const zy = py(0);
+    zeroLineHTML = `<line x1="${PL}" y1="${zy.toFixed(1)}" x2="${W-PR}" y2="${zy.toFixed(1)}"
+      stroke="var(--coral)" stroke-width="0.8" stroke-dasharray="3,3" opacity="0.6"/>`;
+  }
+
+  // 折れ線パス
+  const pathD = months.map((m,i)=>`${i===0?'M':'L'}${px(i).toFixed(1)},${py(m.endBalance).toFixed(1)}`).join(' ');
+
+  // 塗りつぶし領域
+  const areaD = pathD
+    + ` L${px(months.length-1).toFixed(1)},${(PT+gH).toFixed(1)}`
+    + ` L${PL.toFixed(1)},${(PT+gH).toFixed(1)} Z`;
+
+  // 現在月のマーカー
+  const curIdx = months.findIndex(m=>m.isCurrent);
+  const curMarker = curIdx>=0 ? `<circle cx="${px(curIdx).toFixed(1)}" cy="${py(months[curIdx].endBalance).toFixed(1)}"
+    r="4" fill="var(--teal-deep)" stroke="white" stroke-width="1.5"/>` : '';
+
+  // Xラベル（月）
+  const xLabels = months.map((m,i)=>{
+    if(i % 2 !== 0 && i !== months.length-1) return '';
+    return `<text x="${px(i).toFixed(1)}" y="${H-2}" text-anchor="middle"
+      font-size="9" fill="var(--ink-soft)">${m.label}</text>`;
+  }).join('');
+
+  // 最小・最大ラベル
+  const maxIdx = balances.indexOf(maxBal);
+  const minIdx = balances.indexOf(minBal);
+  const maxLabelX = Math.min(Math.max(px(maxIdx), 28), W-28);
+  const minLabelX = Math.min(Math.max(px(minIdx), 28), W-28);
+  const maxLabelY = Math.max(py(maxBal) - 5, PT + 8);
+  const minLabelY = Math.min(py(minBal) + 13, H - PB - 2);
+
+  const lineColor = minBal < 0 ? 'var(--coral)' : 'var(--teal-deep)';
+  const svg = `
+  <svg viewBox="0 0 ${W} ${H}" style="width:100%; height:${H}px; display:block; overflow:visible;">
+    <defs>
+      <linearGradient id="fg-area" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.18"/>
+        <stop offset="100%" stop-color="${lineColor}" stop-opacity="0.02"/>
+      </linearGradient>
+    </defs>
+    ${zeroLineHTML}
+    <path d="${areaD}" fill="url(#fg-area)"/>
+    <path d="${pathD}" fill="none" stroke="${lineColor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    ${curMarker}
+    ${xLabels}
+    <text x="${maxLabelX}" y="${maxLabelY}" text-anchor="middle" font-size="8.5" fill="var(--teal-deep)" font-weight="700">${Math.round(maxBal/10000)}万</text>
+    ${maxIdx!==minIdx ? `<text x="${minLabelX}" y="${minLabelY}" text-anchor="middle" font-size="8.5" fill="${minBal<0?'var(--coral)':'var(--ink-soft)'}" font-weight="700">${Math.round(minBal/10000)}万</text>` : ''}
+  </svg>`;
+
+  // ===== テーブル =====
+  const tableRows = months.map(r=>`
+    <tr class="${r.isCurrent?'current-month':''}">
+      <td style="white-space:nowrap;">${r.yearLabel ? `<span style="font-size:10px;color:var(--ink-soft);display:block;">${r.yearLabel}</span>` : ''}${r.label}</td>
+      <td class="num ${r.settlement>0?'':'soft'}">${r.settlement>0 ? yen(r.settlement) : '—'}</td>
+      <td class="num ${r.recurExpense>0?'':'soft'}">${r.recurExpense>0 ? yen(r.recurExpense) : '—'}</td>
+      <td class="num ${r.recurIncome>0?'':'soft'}">${r.recurIncome>0 ? '+'+yen(r.recurIncome) : '—'}</td>
+      <td class="num" style="font-weight:700; color:${r.endBalance<0?'var(--coral)':'var(--ink)'};">${yen(r.endBalance)}</td>
+    </tr>
+  `).join('');
+
+  // ── 起点残高の説明行 ──
+  const startingBalance = forecastAccountFilter === null
+    ? totalBalance()
+    : Number((findAccount(forecastAccountFilter)||{}).balance || 0);
+  const startingLabel = forecastAccountFilter === null
+    ? `全口座合計 ${yen(startingBalance)}`
+    : `${escapeHtml((selectedAcct||{}).name||'')} ${yen(startingBalance)}`;
+
+  // ── 注記テキスト ──
+  let noteText = '※ 予測は現在残高を起点に、カード引落・定期支出・定期収入・未来日の入出金（予定／残高未反映分）の差分を加減算しています。日付が本日以前の通常の入出金（入出金登録）は登録した時点で現在残高に反映済みです。';
+  if(forecastAccountFilter !== null){
+    noteText += '　口座別表示では、その口座に紐づく定期収支・クレカ引落・入出金のみを反映します（他の口座間の資金移動は含まれません）。';
+  }
+  if(summaryTypeFilter !== 'all'){
+    noteText += `　⚠️ ${summaryTypeFilter==='personal'?'個人':'家計'}フィルタ中：定期収支・クレカはフィルタ後の数値で計算しています。`;
+  }
+
+  el.innerHTML = `
+    ${tabsHTML}
+    <div style="font-size:11px; color:var(--ink-soft); margin-bottom:8px;">
+      起点残高：<b class="num" style="color:var(--teal-deep);">${startingLabel}</b>
+    </div>
+    <div style="margin-bottom:12px;">${svg}</div>
+    <div style="overflow-x:auto; margin:0 -4px;">
+      <table class="tbl" style="min-width:300px;">
+        <thead>
+          <tr>
+            <th>月末</th>
+            <th>引落</th>
+            <th>定期支出</th>
+            <th>定期収入</th>
+            <th>予測残高</th>
+          </tr>
+        </thead>
+        <tbody>${tableRows}</tbody>
+      </table>
+    </div>
+    <div class="helper-text" style="margin-top:10px; margin-bottom:0;">
+      ${escapeHtml(noteText)}
+    </div>
+  `;
+}
+
+function moveArrayItem(list, id, delta){
+  const i = list.findIndex(item=>item.id===id);
+  if(i < 0) return false;
+  const j = i + delta;
+  if(j < 0 || j >= list.length) return false;
+  const tmp = list[i];
+  list[i] = list[j];
+  list[j] = tmp;
+  touchRecord(list[i]);
+  touchRecord(list[j]);
+  saveData();
+  return true;
+}
+function moveAccount(id, delta){ if(moveArrayItem(DB.accounts, id, delta)){ renderSettings(); renderHome(); } }
+function moveCard(id, delta){ if(moveArrayItem(DB.cards, id, delta)){ renderSettings(); renderHome(); renderSummary(); } }
+function orderButtons(upCode, downCode){
+  return `<button class="icon-btn" title="上へ" onclick="${upCode}"><svg viewBox="0 0 24 24"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button><button class="icon-btn" title="下へ" onclick="${downCode}"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12l7 7 7-7"/></svg></button>`;
+}
+
+/* =========================================================================
+   SETTINGS TAB (設定)
+   ========================================================================= */
+function renderSettings(){
+  const panel = document.getElementById('panel-settings');
+  panel.innerHTML = `
+    <div class="section-label">口座設定</div>
+    <div class="card">
+      <div id="settingsAccountList"></div>
+      <button class="btn btn-secondary btn-block" style="margin-top:12px" onclick="openAccountForm()">+ 口座を追加</button>
+    </div>
+
+    <div class="section-label">クレジットカード設定</div>
+    <div class="card">
+      <div id="settingsCardList"></div>
+      <button class="btn btn-secondary btn-block" style="margin-top:12px" onclick="openCardForm()">+ カードを追加</button>
+    </div>
+
+    <div class="section-label">バックアップ</div>
+    <div class="card">
+      <div id="backupHealthBanner"></div>
+      <div class="helper-text" style="margin-top:0;">アプリ内に自動で変更履歴と週次のスナップショットを保持しています。万が一の操作ミスや表示の乱れがあっても、過去の状態に戻せます。</div>
+      <div class="form-actions" style="margin-top:4px;">
+        <button class="btn btn-primary" style="flex:1" onclick="exportJSON()">
+          <svg width="15" height="15" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2"><path d="M12 3v12m0 0l-4-4m4 4l4-4"/><path d="M4 19h16"/></svg>
+          JSONエクスポート
+        </button>
+        <button class="btn btn-ghost" style="flex:1" onclick="document.getElementById('importFileInput').click()">JSONインポート</button>
+      </div>
+      <input type="file" id="importFileInput" accept="application/json" style="display:none" onchange="importJSON(event)">
+      <button class="btn btn-ghost btn-block btn-sm" style="margin-top:10px;" onclick="openRestorePanel()">自動バックアップから復元する</button>
+    </div>
+  `;
+  renderSettingsAccounts();
+  renderSettingsCards();
+  renderBackupHealthBanner();
+}
+
+function renderBackupHealthBanner(){
+  const el = document.getElementById('backupHealthBanner');
+  if(!el) return;
+  const lastExport = getLastExportTime();
+  const exportDays = daysSince(lastExport);
+  const snapshots = getSnapshots();
+  const latestSnap = snapshots[0];
+  const snapDays = latestSnap ? daysSince(latestSnap.t) : null;
+
+  let tone = 'ok'; // ok | warn
+  let msg;
+  if(lastExport===null){
+    tone='warn';
+    msg = 'まだJSONファイルへの書き出し（端末への実保存）が一度もありません。ブラウザのデータが消えると復元できなくなるため、一度エクスポートしておくと安心です。';
+  }else if(exportDays >= 30){
+    tone='warn';
+    msg = `最後のJSONエクスポートから${exportDays}日経っています。そろそろバックアップをおすすめします。`;
+  }else{
+    msg = `最後のJSONエクスポート：${exportDays===0?'今日':exportDays+'日前'}（${fmtDateTime(lastExport)}）`;
+  }
+
+  const snapInfo = latestSnap
+    ? `自動スナップショット：${snapDays===0?'今日':snapDays+'日前'}取得・${snapshots.length}件保持中`
+    : '自動スナップショットはまだありません';
+
+  el.innerHTML = `
+    <div style="background:${tone==='warn'?'var(--coral-tint)':'var(--green-tint)'}; border-radius:10px; padding:12px 13px; margin-bottom:14px;">
+      <div style="display:flex; gap:8px; align-items:flex-start;">
+        <span style="font-size:15px; line-height:1.3;">${tone==='warn'?'⚠️':'✅'}</span>
+        <div style="font-size:12.5px; line-height:1.55; color:var(--ink);">
+          ${escapeHtml(msg)}
+          <div style="color:var(--ink-soft); margin-top:4px;">${escapeHtml(snapInfo)}</div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+/* ---------- Restore from automatic backup ---------- */
+function openRestorePanel(){
+  const snapshots = getSnapshots();
+  const log = getChangeLog();
+
+  function body(){
+    const snapRows = snapshots.length ? snapshots.map(s=>{
+      const c = s.data ? {
+        accounts: s.data.accounts?.length||0,
+        cards: s.data.cards?.length||0,
+        creditEntries: s.data.creditEntries?.length||0,
+        bankEntries: s.data.bankEntries?.length||0,
+        largeExpenses: s.data.largeExpenses?.length||0,
+      } : {};
+      return `
+      <div class="settings-row">
+        <div class="sr-main">
+          <div class="sr-name">${fmtDateTime(s.t)}</div>
+          <div class="sr-sub">明細 ${ (c.creditEntries||0)+(c.bankEntries||0) }件・定期入出金 ${c.largeExpenses||0}件・口座 ${c.accounts||0}件</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="confirmRestoreSnapshot(${s.t})">この時点に復元</button>
+      </div>`;
+    }).join('') : `<div class="empty-state"><div class="es">自動スナップショットはまだありません（週1回、自動的に作成されます）</div></div>`;
+
+    const logRows = log.slice(0,12).map(l=>`
+      <div class="cat-sub-row" style="padding-left:0;">
+        <span>${fmtDateTime(l.t)}</span>
+        <span class="num" style="color:var(--ink-soft);">明細${(l.counts.creditEntries||0)+(l.counts.bankEntries||0)}・定期入出金${l.counts.largeExpenses||0}</span>
+      </div>
+    `).join('');
+
+    return `
+      ${modalHeader('自動バックアップから復元')}
+      <div class="helper-text" style="margin-top:0;">週1回、自動的に全データのスナップショットを保存しています（直近${MAX_SNAPSHOTS}件）。誤って削除してしまった場合などに、復元できます。</div>
+      <div class="field"><label>週次スナップショット</label></div>
+      ${snapRows}
+      <div class="field" style="margin-top:18px;"><label>最近の変更履歴（参考）</label></div>
+      ${logRows || '<div class="helper-text">変更履歴はまだありません</div>'}
+      <div class="form-actions">
+        <button class="btn btn-ghost btn-block" onclick="closeModal()">閉じる</button>
+      </div>
+    `;
+  }
+  openModal(body());
+}
+
+function confirmRestoreSnapshot(timestamp){
+  askConfirm(
+    `${fmtDateTime(timestamp)}の状態に復元します。現在のデータは上書きされます。よろしいですか？`,
+    ()=>{
+      const ok = restoreSnapshot(timestamp);
+      if(ok){
+        // B-03対応：復元したスナップショットの中に、現在の日付から見て既に
+        // 期日が到来している保留中（未来日）の入出金が含まれている場合に
+        // 備え、復元直後にもキャッチアップを実行する。
+        runDueBankEntriesCatchUp();
+      }
+      closeModal();
+      if(ok){
+        renderAll();
+        showToast('復元しました');
+      }else{
+        showToast('復元に失敗しました');
+      }
+    },
+    { danger:false, confirmLabel:'復元する' }
+  );
+}
+
+/* ---------- Accounts ---------- */
+function renderSettingsAccounts(){
+  const el = document.getElementById('settingsAccountList');
+  if(DB.accounts.length===0){
+    el.innerHTML = `<div class="empty-state"><div class="es">口座がまだありません</div></div>`;
+    return;
+  }
+  el.innerHTML = DB.accounts.map(a=>`
+    <div class="settings-row">
+      <div class="sr-main">
+        <div class="sr-name">${escapeHtml(a.name)} ${a.isMain?'<span class="acct-badge">メイン</span>':''}</div>
+        <div class="sr-sub num">${yen(a.balance)}</div>
+      </div>
+      <div class="inline-entry-actions">
+        ${orderButtons(`moveAccount('${a.id}', -1)`, `moveAccount('${a.id}', 1)`)}<button class="icon-btn" onclick="openAccountForm('${a.id}')"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
+        <button class="icon-btn" onclick="deleteAccount('${a.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m-9 0l1 14h8l1-14"/></svg></button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openAccountForm(editId){
+  const editing = editId ? findAccount(editId) : null;
+  const state = {
+    name: editing ? editing.name : '',
+    balance: editing ? editing.balance : '',
+    isMain: editing ? !!editing.isMain : DB.accounts.length===0,
+  };
+  function body(){
+    return `
+      ${modalHeader(editing?'口座を編集':'口座を追加')}
+      <div class="field"><label>口座名<span class="req">*</span></label>
+        <input type="text" id="af_name" placeholder="例：サブ口座" value="${escapeHtml(state.name)}"></div>
+      <div class="field"><label>残高<span class="req">*</span></label>
+        <input type="number" id="af_balance" inputmode="numeric" placeholder="0" value="${state.balance}"></div>
+      <div class="field">
+        <label>メイン口座に設定</label>
+        <div class="segmented">
+          <button type="button" class="${state.isMain?'active':''}" onclick="acctFormSetMain(true)">はい</button>
+          <button type="button" class="${!state.isMain?'active':''}" onclick="acctFormSetMain(false)">いいえ</button>
+        </div>
+      </div>
+      <div class="form-actions">
+        ${editing ? `<button class="btn btn-ghost" onclick="deleteAccount('${editing.id}')">削除</button>` : ''}
+        <button class="btn btn-primary" onclick="submitAccountForm(${editing?`'${editing.id}'`:'null'})">${editing?'更新する':'追加する'}</button>
+      </div>
+    `;
+  }
+  window._acctFormState = state;
+  window.acctFormSetMain = (v)=>{ state.isMain=v; openModal(body()); captureInputs(); };
+  function captureInputs(){
+    const nameEl = document.getElementById('af_name');
+    const balEl = document.getElementById('af_balance');
+    if(nameEl) nameEl.oninput = ()=>state.name = nameEl.value;
+    if(balEl) balEl.oninput = ()=>state.balance = balEl.value;
+  }
+  openModal(body());
+  captureInputs();
+}
+
+function submitAccountForm(editId){
+  const s = window._acctFormState;
+  if(!s.name || !s.name.trim()){ showToast('口座名を入力してください'); return; }
+  if(s.balance==='' || isNaN(Number(s.balance))){ showToast('残高を入力してください'); return; }
+
+  if(s.isMain){
+    DB.accounts.forEach(a=>a.isMain=false);
+  }
+  if(editId){
+    const a = findAccount(editId);
+    touchRecord(Object.assign(a, {name:s.name.trim(), balance:Number(s.balance), isMain:s.isMain}));
+    showToast('口座を更新しました');
+  }else{
+    DB.accounts.push(stampNew({id:uid('acc'), name:s.name.trim(), balance:Number(s.balance), isMain:s.isMain, buffer:0}));
+    showToast('口座を追加しました');
+  }
+  // ensure at least one main account
+  if(!DB.accounts.some(a=>a.isMain) && DB.accounts.length>0) DB.accounts[0].isMain = true;
+  saveData();
+  closeModal();
+  renderSettings(); renderHome();
+}
+
+function deleteAccount(id){
+  const usedByLarge = DB.largeExpenses.some(e=>e.accountId===id);
+  const usedByCredit = DB.creditEntries.some(e=>e.settlementAccountId===id);
+  const usedByBank = DB.bankEntries.some(e=>e.accountId===id);
+  const msg = (usedByLarge || usedByCredit || usedByBank)
+    ? 'この口座は明細で使用されています。削除すると関連明細の口座表示が「削除済み」になります。削除しますか？'
+    : 'この口座を削除しますか？';
+  askConfirm(msg, ()=>{
+    DB.accounts = DB.accounts.filter(a=>a.id!==id);
+    if(!DB.accounts.some(a=>a.isMain) && DB.accounts.length>0) DB.accounts[0].isMain = true;
+    saveData();
+    closeModal();
+    renderSettings(); renderHome();
+  });
+}
+
+/* ---------- Cards ---------- */
+function renderSettingsCards(){
+  const el = document.getElementById('settingsCardList');
+  if(DB.cards.length===0){
+    el.innerHTML = `<div class="empty-state"><div class="es">カードがまだありません</div></div>`;
+    return;
+  }
+  el.innerHTML = DB.cards.map(c=>`
+    <div class="settings-row">
+      <div class="sr-main">
+        <div class="sr-name">${escapeHtml(c.name)} ${cardTypeTagsHTML(c.type)}${c.hidden ? ' <span class="tiny-tag" style="background:#eee;color:#999">非表示中</span>' : ''}</div>
+        <div class="sr-sub">${cardDayLabel(c.closingDay)}締め・${cardDayLabel(c.paymentDay)}払い</div>
+      </div>
+      <div class="inline-entry-actions">
+        ${orderButtons(`moveCard('${c.id}', -1)`, `moveCard('${c.id}', 1)`)}<button class="icon-btn" onclick="setCardHidden('${c.id}', ${!c.hidden})" title="${c.hidden?'再表示する':'非表示にする'}">${c.hidden?ICON_EYE_OFF:ICON_EYE}</button>
+        <button class="icon-btn" onclick="openCardForm('${c.id}')"><svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4z"/></svg></button>
+        <button class="icon-btn" onclick="deleteCard('${c.id}')"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m-9 0l1 14h8l1-14"/></svg></button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function dayOptionsHTML(selectedVal){
+  const opts = [`<option value="0" ${selectedVal===0?'selected':''}>月末</option>`];
+  for(let d=1; d<=31; d++){
+    opts.push(`<option value="${d}" ${selectedVal===d?'selected':''}>${d}日</option>`);
+  }
+  return opts.join('');
+}
+
+function openCardForm(editId){
+  const editing = editId ? findCard(editId) : null;
+  const state = {
+    name: editing?editing.name:'',
+    personal: editing ? (editing.type==='personal' || editing.type==='both') : true,
+    household: editing ? (editing.type==='household' || editing.type==='both') : false,
+    closingDay: editing ? (editing.closingDay ?? 0) : 0,
+    paymentDay: editing ? (editing.paymentDay ?? 27) : 27,
+    hidden: editing ? !!editing.hidden : false,
+  };
+  function body(){
+    return `
+      ${modalHeader(editing?'カードを編集':'カードを追加')}
+      <div class="field"><label>カード名<span class="req">*</span></label>
+        <input type="text" id="cdf_name" placeholder="例：楽天カード" value="${escapeHtml(state.name)}"></div>
+      <div class="field"><label>区分<span class="req">*</span></label>
+        <div class="segmented">
+          <button type="button" class="${state.personal?'active':''}" onclick="cardFormToggleType('personal')">個人</button>
+          <button type="button" class="${state.household?'active':''}" onclick="cardFormToggleType('household')">家計</button>
+        </div>
+        <div class="helper-text">両方タップすると、個人・家計どちらの明細でもこのカードを選べます。</div>
+      </div>
+      <div class="field"><label>締め日<span class="req">*</span></label>
+        <select id="cdf_closingDay">${dayOptionsHTML(state.closingDay)}</select>
+      </div>
+      <div class="field"><label>引落日<span class="req">*</span></label>
+        <select id="cdf_paymentDay">${dayOptionsHTML(state.paymentDay)}</select>
+      </div>
+      <div class="helper-text" style="margin-top:-6px;">引落は締め日の翌月になります（例：月末締め・27日払いの場合、6/10利用→7/27引落）</div>
+      ${editing ? `
+      <div class="field">
+        <label>表示状態</label>
+        <div class="segmented">
+          <button type="button" class="${!state.hidden?'active':''}" onclick="cardFormSetHidden(false)">表示する</button>
+          <button type="button" class="${state.hidden?'active':''}" onclick="cardFormSetHidden(true)">非表示にする</button>
+        </div>
+        <div class="helper-text">非表示にすると新規明細登録のカード選択肢から外れます（過去の明細・集計はそのまま残ります）。</div>
+      </div>` : ''}
+      <div class="form-actions">
+        ${editing ? `<button class="btn btn-ghost" onclick="deleteCard('${editing.id}')">削除</button>` : ''}
+        <button class="btn btn-primary" onclick="submitCardForm(${editing?`'${editing.id}'`:'null'})">${editing?'更新する':'追加する'}</button>
+      </div>
+    `;
+  }
+  window._cardFormState = state;
+  window.cardFormToggleType = (key)=>{
+    const other = key==='personal' ? 'household' : 'personal';
+    if(state[key] && !state[other]) return; // 最後の1つはOFFにできない（最低どちらか一方は必須）
+    state[key] = !state[key];
+    openModal(body()); captureInputs();
+  };
+  window.cardFormSetHidden = (v)=>{ state.hidden=v; openModal(body()); captureInputs(); };
+  function captureInputs(){
+    const nameEl = document.getElementById('cdf_name');
+    const closingEl = document.getElementById('cdf_closingDay');
+    const paymentEl = document.getElementById('cdf_paymentDay');
+    if(nameEl) nameEl.oninput = ()=>state.name = nameEl.value;
+    if(closingEl) closingEl.oninput = ()=>state.closingDay = Number(closingEl.value);
+    if(paymentEl) paymentEl.oninput = ()=>state.paymentDay = Number(paymentEl.value);
+  }
+  openModal(body());
+  captureInputs();
+}
+
+function submitCardForm(editId){
+  const s = window._cardFormState;
+  if(!s.name || !s.name.trim()){ showToast('カード名を入力してください'); return; }
+  const type = (s.personal && s.household) ? 'both' : (s.personal ? 'personal' : 'household');
+  if(editId){
+    touchRecord(Object.assign(findCard(editId), {name:s.name.trim(), type, closingDay:s.closingDay, paymentDay:s.paymentDay, hidden:!!s.hidden}));
+    showToast('カードを更新しました');
+  }else{
+    DB.cards.push(stampNew({id:uid('card'), name:s.name.trim(), type, closingDay:s.closingDay, paymentDay:s.paymentDay, hidden:false}));
+    showToast('カードを追加しました');
+  }
+  saveData();
+  closeModal();
+  renderSettings(); renderHome();
+}
+
+function setCardHidden(id, hidden){
+  const c = findCard(id);
+  if(!c) return;
+  touchRecord(Object.assign(c, {hidden}));
+  saveData();
+  closeModal();
+  renderSettings(); renderHome();
+  showToast(hidden ? 'カードを非表示にしました' : 'カードを再表示しました');
+}
+
+function deleteCard(id){
+  const card = findCard(id);
+  if(!card) return;
+  const usageCount = DB.creditEntries.filter(e=>e.cardId===id).length;
+  if(usageCount > 0){
+    openCardDeleteGuardModal(card, usageCount);
+    return;
+  }
+  askConfirm('このカードを削除しますか？', ()=>{
+    DB.cards = DB.cards.filter(c=>c.id!==id);
+    saveData();
+    closeModal();
+    renderSettings(); renderHome();
+  });
+}
+
+function openCardDeleteGuardModal(card, usageCount){
+  openModal(`
+    ${modalHeader('カードの削除について')}
+    <div style="font-size:14px; line-height:1.7; color:var(--ink); margin-bottom:18px;">
+      「${escapeHtml(card.name)}」には<strong class="num">${usageCount}件</strong>の明細が登録されています。<br>
+      削除すると締め日・引落日の情報が失われ、引落予定一覧やサマリの集計が変わる場合があります。<br><br>
+      今後このカードを使わないだけであれば、<strong>「非表示にする」</strong>がおすすめです。明細・集計はそのまま保持され、新規登録の選択肢からのみ外れます。
+    </div>
+    <div style="display:flex; flex-direction:column; gap:8px;">
+      <button class="btn btn-primary btn-block" onclick="setCardHidden('${card.id}', true)">非表示にする（推奨）</button>
+      <button class="btn btn-coral btn-block" onclick="confirmHardDeleteCard('${card.id}')">それでも削除する</button>
+      <button class="btn btn-ghost btn-block" onclick="closeModal()">キャンセル</button>
+    </div>
+  `);
+}
+
+function confirmHardDeleteCard(id){
+  askConfirm('本当に削除しますか？関連する明細は「(削除済みカード)」表示になり、締め日・引落日の情報が失われます。', ()=>{
+    DB.cards = DB.cards.filter(c=>c.id!==id);
+    saveData();
+    closeModal();
+    renderSettings(); renderHome();
+  }, { danger:true, confirmLabel:'削除する' });
+}
+
+
+/* ---------- JSON export / import ---------- */
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(DB, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const d = new Date();
+  const stamp = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  a.href = url;
+  a.download = 'finance-data.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  markExported();
+  showToast('JSONファイルを書き出しました');
+  if(currentTab==='settings') renderSettings();
+}
+
+function importJSON(event){
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    try{
+      const parsed = JSON.parse(e.target.result);
+      if(!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.accounts)){
+        showToast('ファイル形式が正しくありません');
+        event.target.value = '';
+        return;
+      }
+      askConfirm('現在のデータを上書きしてインポートします。よろしいですか？', ()=>{
+        const previousDB = DB; // E-09対応：保存失敗時のロールバック用に退避
+        DB = migrateData(Object.assign(defaultData(), parsed));
+        const ok = saveData();
+        if(!ok){
+          // E-09対応：保存（localStorage.setItem）が失敗した場合、画面上の
+          // DBだけが新データに置き換わり、永続化はされていない不整合状態に
+          // なってしまう。再読込するとインポート前のデータに戻る一方、
+          // 何も保存されていないことに気付かれないままだと「成功した」と
+          // 誤認してしまうため、旧DBへロールバックした上で専用の警告を表示する。
+          DB = previousDB;
+          renderAll();
+          showToast('インポートに失敗しました（保存エラー）。データは変更されていません');
+          event.target.value = '';
+          return;
+        }
+        // B-03対応：インポートしたデータの中に、現在の日付から見て既に期日が
+        // 到来している保留中（未来日）の入出金が含まれている場合に備え、
+        // インポート直後にもキャッチアップを実行する。
+        runDueBankEntriesCatchUp();
+        runLargeExpenseCreditCatchUp();
+        renderAll();
+        // C-15対応：migrateData()で対象月未設定のため自動停止された定期入出金が
+        // あれば、ユーザーが気付けるようトースト文言に件数を含める。
+        const autoDeactivatedCount = DB.largeExpenses.filter(e=>e._autoDeactivatedReason).length;
+        showToast(autoDeactivatedCount > 0
+          ? `データをインポートしました（対象月未設定の定期入出金${autoDeactivatedCount}件を自動停止しました）`
+          : 'データをインポートしました');
+      }, { danger:false, confirmLabel:'インポートする' });
+      event.target.value = '';
+    }catch(err){
+      console.error(err);
+      showToast('読み込みに失敗しました');
+      event.target.value = '';
+    }
+  };
+  reader.readAsText(file);
+}
+
+/* =========================================================================
+   INIT
+   ========================================================================= */
+// B-03対応：保留中（appliedToBalance=false、未来日のため未反映）の入出金の
+// うち、起動時点で日付が本日以前に到達しているものを自動的に口座残高へ
+// 反映する（Phase 4：日付到来時の自動キャッチアップ）。
+runDueBankEntriesCatchUp();
+// カード連携定期入出金の自動creditEntry生成（今月までの未生成分を補完）
+runLargeExpenseCreditCatchUp();
+
+// On load: ensure a changelog entry exists, and take a snapshot if a week
+// has passed since the last one (covers "opened the app but didn't edit
+// anything" weeks too, not just edit-triggered saves).
+if(getChangeLog().length===0) recordChangeLogEntry();
+maybeRunWeeklySnapshot();
+
+installTapActionSupport();
+installSwipeActions();
+renderAll();
+
+// keep topbar shadow state on scroll
+window.addEventListener('scroll', ()=>{
+  document.getElementById('topbar').classList.toggle('scrolled', window.scrollY > 4);
+});
+
+</script>
+</body>
+</html>
