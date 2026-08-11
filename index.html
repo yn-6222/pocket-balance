@@ -1,0 +1,2770 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>資産管理</title>
+<!-- Chart.js removed: using inline SVG renderer for Edge/local-file compatibility -->
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --bg: #F4F6FA;
+  --card: #FFFFFF;
+  --text: #111827;
+  --muted: #6B7280;
+  --border: #E5E9F0;
+  --blue: #2563EB;
+  --blue-light: #EFF6FF;
+  --green: #059669;
+  --green-light: #ECFDF5;
+  --red: #DC2626;
+  --red-light: #FEF2F2;
+  --amber: #D97706;
+  --amber-light: #FFFBEB;
+  --tab-h: 66px;
+  --p1: #2563EB;
+  --p2: #7C3AED;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,0.1), 0 4px 8px rgba(0,0,0,0.06);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, 'Hiragino Sans', 'Yu Gothic', sans-serif;
+  min-height: 100vh;
+  padding-bottom: var(--tab-h);
+}
+
+/* ── Header ── */
+.header {
+  background: var(--card);
+  padding: 14px 16px 0;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  box-shadow: var(--shadow-sm);
+}
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.header-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text);
+}
+.header-date {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Person switcher ── */
+.person-switch {
+  display: flex;
+  background: var(--bg);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+  gap: 2px;
+  border: 1px solid var(--border);
+}
+.ps-btn {
+  flex: 1;
+  padding: 7px 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  background: transparent;
+  color: var(--muted);
+  transition: all 0.18s ease;
+  white-space: nowrap;
+}
+.ps-btn.active {
+  background: var(--card);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
+}
+.ps-btn.p1.active { color: var(--p1); }
+.ps-btn.p2.active { color: var(--p2); }
+.ps-btn.disabled { opacity: 0.35; cursor: not-allowed; pointer-events: none; }
+
+/* ── Mode stripe ── */
+.mode-stripe {
+  height: 3px;
+  border-radius: 2px 2px 0 0;
+  margin-top: 8px;
+  transition: background 0.25s ease;
+}
+
+/* ── Tab bar ── */
+.tab-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--tab-h);
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  display: flex;
+  z-index: 20;
+  box-shadow: 0 -4px 16px rgba(0,0,0,0.06);
+}
+.tab-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  padding-bottom: env(safe-area-inset-bottom);
+  position: relative;
+  transition: color 0.15s;
+}
+.tab-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 25%;
+  right: 25%;
+  height: 2px;
+  border-radius: 0 0 2px 2px;
+  background: var(--blue);
+  opacity: 0;
+  transform: scaleX(0);
+  transition: opacity 0.2s, transform 0.2s;
+}
+.tab-btn.active { color: var(--blue); font-weight: 700; }
+.tab-btn.active::before { opacity: 1; transform: scaleX(1); }
+.tab-icon { width: 22px; height: 22px; display: block; }
+.s-icon { width: 18px; height: 18px; flex-shrink: 0; }
+.empty-icon { width: 44px; height: 44px; margin: 0 auto 12px; opacity: 0.45; display: block; }
+
+/* ── Screens ── */
+.screen { display: none; padding: 16px; }
+.screen.active { display: block; }
+
+/* ── Cards ── */
+.card {
+  background: var(--card);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.card-label {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+/* ── Hero card ── */
+.hero-card {
+  background: linear-gradient(135deg, #1e3a8a 0%, #2563EB 60%, #3b82f6 100%);
+  border: none;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+}
+.hero-card::before {
+  content: '';
+  position: absolute;
+  top: -40px;
+  right: -40px;
+  width: 160px;
+  height: 160px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 50%;
+}
+.hero-card::after {
+  content: '';
+  position: absolute;
+  bottom: -60px;
+  left: -20px;
+  width: 180px;
+  height: 180px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 50%;
+}
+.hero-label {
+  font-size: 11px;
+  color: rgba(255,255,255,0.65);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 4px;
+  position: relative;
+  z-index: 1;
+}
+.hero-month {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  margin-bottom: 6px;
+  position: relative;
+  z-index: 1;
+}
+.hero-value {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  font-variant-numeric: tabular-nums;
+  color: #fff;
+  position: relative;
+  z-index: 1;
+  line-height: 1.1;
+  margin-bottom: 14px;
+}
+.hero-stats {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+.hero-stat-label {
+  font-size: 10px;
+  color: rgba(255,255,255,0.6);
+  margin-bottom: 2px;
+  letter-spacing: 0.03em;
+}
+.hero-stat-value {
+  font-size: 14px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Gain/Loss ── */
+.gain { color: var(--green); }
+.loss { color: var(--red); }
+.gain-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 20px;
+  font-variant-numeric: tabular-nums;
+}
+.gain-pill.gain { background: var(--green-light); color: var(--green); }
+.gain-pill.loss { background: var(--red-light); color: var(--red); }
+
+/* ── Category rows ── */
+.cat-row {
+  display: flex;
+  align-items: center;
+  padding: 12px 0;
+  gap: 6px;
+  position: relative;
+}
+.cat-row + .cat-divider + .cat-row,
+.cat-row + .cat-row { border-top: 1px solid var(--border); }
+.cat-row-clickable { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.cat-row-clickable:active { opacity: 0.7; }
+.cat-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.cat-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+}
+.cat-count {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+  border-radius: 10px;
+  padding: 1px 7px;
+  flex-shrink: 0;
+}
+.cat-chevron {
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+.cat-chevron svg { width: 14px; height: 14px; }
+.cat-chevron.open { transform: rotate(90deg); }
+.cat-right { text-align: right; flex-shrink: 0; }
+.cat-amount { font-size: 14px; font-weight: 800; color: var(--text); font-variant-numeric: tabular-nums; }
+.cat-gain { display: flex; align-items: center; justify-content: flex-end; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.cat-divider { height: 1px; background: var(--border); }
+
+/* ── Category detail rows ── */
+.cat-detail-list {
+  padding: 4px 0 10px 22px;
+  display: flex;
+  flex-direction: column;
+  border-left: 2px solid var(--border);
+  margin-left: 4px;
+  margin-bottom: 2px;
+  animation: catSlide 0.17s ease;
+}
+@keyframes catSlide {
+  from { opacity: 0; transform: translateY(-5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.cat-detail-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 9px 0 9px 8px;
+  border-bottom: 1px solid var(--border);
+  gap: 8px;
+}
+.cat-detail-row:last-child { border-bottom: none; }
+.cat-detail-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+.cat-detail-right { text-align: right; flex-shrink: 0; }
+.cat-detail-amount { font-size: 13px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+.cat-detail-gain { margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+/* ── Donut ── */
+.donut-wrap {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 6px 0;
+}
+.legend { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+.legend-item { display: flex; justify-content: space-between; align-items: center; }
+.legend-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.legend-pct { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ── Section title ── */
+.section-title {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  font-weight: 600;
+  margin: 20px 0 10px;
+  padding: 0 2px;
+}
+
+/* ── Combined summary ── */
+.combined-row { display: flex; gap: 10px; margin-bottom: 12px; }
+.combined-card {
+  flex: 1;
+  background: var(--card);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.combined-card-label { font-size: 11px; font-weight: 700; margin-bottom: 8px; letter-spacing: 0.04em; }
+.combined-card-label.p1 { color: var(--p1); }
+.combined-card-label.p2 { color: var(--p2); }
+.combined-total { font-size: 18px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.combined-sub { font-size: 11px; color: var(--muted); margin-top: 4px; font-variant-numeric: tabular-nums; font-weight: 600; }
+
+/* ── Asset items ── */
+.asset-item {
+  background: var(--card);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.asset-name { font-size: 14px; font-weight: 600; line-height: 1.4; }
+.asset-actions { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+.reorder-btns { display: flex; gap: 4px; margin-right: auto; }
+.reorder-btn {
+  width: 28px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: 7px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s;
+}
+.reorder-btn:active { background: var(--border); }
+.reorder-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.reorder-btn svg { width: 14px; height: 14px; }
+.action-btn {
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  border-radius: 7px;
+  padding: 5px 12px;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.action-btn:active { background: var(--border); }
+.action-btn.del { color: var(--red); border-color: #fecaca; }
+.action-btn.del:active { background: var(--red-light); }
+
+/* ── Monthly input ── */
+.month-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--card);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  border: 1px solid var(--border);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  position: sticky;
+  top: var(--header-h, 0px);
+  z-index: 9;
+}
+.month-nav-btn {
+  background: var(--blue-light);
+  border: none;
+  font-size: 22px;
+  color: var(--blue);
+  cursor: pointer;
+  padding: 4px 14px;
+  border-radius: 8px;
+  line-height: 1;
+  transition: background 0.15s;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.month-nav-btn:active { background: #dbeafe; }
+.month-nav-label { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
+
+.input-card {
+  background: var(--card);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.2s;
+}
+.input-card.has-data { border-color: #86efac; }
+.input-card-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.input-card-prev {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 10px;
+  padding: 6px 10px;
+  background: var(--bg);
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+}
+.input-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.input-row:last-child { margin-bottom: 0; }
+.input-row label { font-size: 12px; color: var(--muted); width: 52px; flex-shrink: 0; font-weight: 600; }
+.input-row input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-appearance: none;
+  font-variant-numeric: tabular-nums;
+  transition: border-color 0.15s, background 0.15s;
+}
+.input-row input:focus {
+  outline: none;
+  border-color: var(--blue);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+
+.save-bar {
+  position: sticky;
+  bottom: calc(var(--tab-h) + 8px);
+  padding: 10px 0 2px;
+  z-index: 5;
+}
+.save-bar-btn {
+  width: 100%;
+  padding: 15px;
+  border-radius: var(--radius-md);
+  font-size: 16px;
+  font-weight: 800;
+  border: none;
+  background: var(--blue);
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(37,99,235,0.3);
+  letter-spacing: -0.01em;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.save-bar-btn:active { opacity: 0.88; transform: scale(0.99); }
+
+/* ── Trend ── */
+.chart-card {
+  background: var(--card);
+  border-radius: var(--radius-md);
+  padding: 16px 16px 12px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.chart-card-title { font-size: 13px; font-weight: 700; margin-bottom: 14px; color: var(--text); }
+
+.trend-item {
+  background: var(--card);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+.trend-month { font-size: 11px; color: var(--blue); font-weight: 700; margin-bottom: 4px; letter-spacing: 0.04em; text-transform: uppercase; }
+.trend-total { font-size: 21px; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.trend-diff { font-size: 12px; font-variant-numeric: tabular-nums; margin-top: 2px; font-weight: 600; }
+.trend-sub { font-size: 12px; color: var(--muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
+
+/* ── Settings ── */
+.setting-section { margin-bottom: 24px; }
+.setting-section-title {
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.07em;
+  font-weight: 600;
+  margin-bottom: 10px;
+  padding: 0 2px;
+  text-transform: uppercase;
+}
+.setting-btn {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: var(--shadow-sm);
+  transition: background 0.15s;
+}
+.setting-btn:active { background: var(--bg); }
+/* .s-icon sizing handled above */
+.setting-btn.danger { color: var(--red); }
+.add-asset-btn {
+  width: 100%;
+  padding: 14px 16px;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: var(--shadow-sm);
+}
+.add-asset-btn:active { opacity: 0.88; transform: scale(0.99); }
+.setting-desc { font-size: 12px; color: var(--muted); margin-top: -4px; margin-bottom: 10px; padding: 0 4px; }
+.name-edit-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+.name-edit-row label { font-size: 12px; color: var(--muted); width: 44px; flex-shrink: 0; font-weight: 600; }
+.name-edit-row input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-appearance: none;
+  transition: border-color 0.15s;
+}
+.name-edit-row input:focus { outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+/* ── Modal ── */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 50;
+  display: none;
+  align-items: flex-end;
+}
+.overlay.open { display: flex; animation: fadeIn 0.18s ease; }
+.overlay.open .modal { animation: slideUp 0.25s cubic-bezier(0.32,0.72,0,1); }
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+.modal {
+  background: var(--card);
+  border-radius: 22px 22px 0 0;
+  padding: 26px 20px 40px;
+  width: 100%;
+}
+.modal-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: -14px auto 20px;
+}
+.modal-title { font-size: 17px; font-weight: 800; margin-bottom: 20px; letter-spacing: -0.02em; }
+.field { margin-bottom: 14px; }
+.field label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 6px; font-weight: 600; letter-spacing: 0.03em; }
+.field input, .field select {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: 15px;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-appearance: none;
+  transition: border-color 0.15s;
+}
+.field input:focus, .field select:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+}
+.modal-btns { display: flex; gap: 10px; margin-top: 20px; }
+.btn { flex: 1; padding: 14px; border-radius: var(--radius-sm); font-size: 15px; font-weight: 700; border: none; cursor: pointer; transition: opacity 0.15s, transform 0.1s; }
+.btn:active { opacity: 0.85; transform: scale(0.98); }
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-cancel { background: var(--bg); color: var(--muted); border: 1.5px solid var(--border); }
+
+/* ── Toast ── */
+.toast {
+  position: fixed;
+  bottom: calc(var(--tab-h) + 20px);
+  left: 50%;
+  transform: translateX(-50%) translateY(10px);
+  background: #111827;
+  color: #fff;
+  padding: 11px 22px;
+  border-radius: 26px;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 100;
+  opacity: 0;
+  transition: opacity 0.22s, transform 0.22s;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: var(--shadow-lg);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ── Empty ── */
+.empty {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 40px 0 32px;
+  line-height: 1.8;
+}
+/* .empty-icon sizing handled above */
+
+/* ── Type badge ── */
+.type-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.03em;
+}
+.type-badge.投資信託 { background: var(--blue-light); color: var(--blue); }
+.type-badge.株式 { background: var(--green-light); color: var(--green); }
+.type-badge.預貯金 { background: var(--amber-light); color: var(--amber); }
+
+/* ── Swipe container ── */
+.swipe-container {
+  overflow: hidden;
+  position: relative;
+  touch-action: pan-y;
+}
+
+/* ── Chart toggle ── */
+.chart-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.chart-toggle-btn {
+  flex: 1;
+  padding: 7px 0;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--bg);
+  color: var(--muted);
+  transition: all 0.15s;
+  touch-action: manipulation;
+}
+.chart-toggle-btn.active {
+  background: var(--blue);
+  color: #fff;
+  border-color: var(--blue);
+}
+.period-toggle {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.period-btn {
+  flex: 1;
+  padding: 6px 0;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  background: var(--bg);
+  color: var(--muted);
+  transition: all 0.15s;
+  touch-action: manipulation;
+  letter-spacing: 0.02em;
+}
+.period-btn.active {
+  background: #1e3a8a;
+  color: #fff;
+  border-color: #1e3a8a;
+}
+
+/* ── ps-all hidden on certain screens ── */
+.ps-btn.all.screen-hidden { display: none; }
+
+/* ── Month picker overlay ── */
+.month-picker-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 60;
+  display: none;
+  align-items: flex-end;
+}
+.month-picker-overlay.open { display: flex; animation: fadeIn 0.18s ease; }
+.month-picker-sheet {
+  background: var(--card);
+  border-radius: 22px 22px 0 0;
+  width: 100%;
+  padding: 16px 0 40px;
+  animation: slideUp 0.25s cubic-bezier(0.32,0.72,0,1);
+}
+.month-picker-handle {
+  width: 36px; height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  margin: 0 auto 14px;
+}
+.month-picker-title {
+  text-align: center;
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+.month-picker-drums {
+  display: flex;
+  justify-content: center;
+  gap: 0;
+  position: relative;
+}
+.month-picker-drums::before,
+.month-picker-drums::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  height: 44px;
+  pointer-events: none;
+  z-index: 2;
+}
+.month-picker-drums::before {
+  top: calc(50% - 22px);
+  border-top: 2px solid var(--blue);
+  border-bottom: 2px solid var(--blue);
+}
+.drum-col {
+  width: 100px;
+  height: 220px;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.drum-col::-webkit-scrollbar { display: none; }
+.drum-item {
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-weight: 600;
+  scroll-snap-align: center;
+  color: var(--muted);
+  transition: color 0.1s, font-size 0.1s;
+  cursor: pointer;
+}
+.drum-item.selected { color: var(--text); font-size: 20px; }
+/* padding items top/bottom so first/last can center */
+.drum-pad { height: 88px; flex-shrink: 0; }
+.month-picker-btns {
+  display: flex;
+  gap: 10px;
+  margin: 16px 20px 0;
+}
+
+/* ── Copy button ── */
+.copy-prev-btn {
+  font-size: 11px;
+  font-weight: 700;
+  border: 1.5px solid var(--blue);
+  background: var(--blue-light);
+  border-radius: 7px;
+  padding: 5px 10px;
+  color: var(--blue);
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.copy-prev-btn:active { background: #dbeafe; }
+.copy-prev-btn:disabled { opacity: 0.35; cursor: not-allowed; border-color: var(--border); color: var(--muted); background: var(--bg); }
+
+/* ── Comma input wrapper ── */
+.amount-input-wrap {
+  flex: 1;
+  position: relative;
+  min-width: 0;
+}
+.amount-display {
+  position: absolute;
+  inset: 0;
+  padding: 10px 12px;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  background: transparent;
+}
+.amount-display.empty { color: var(--muted); font-size: 14px; }
+.input-row input.hidden-val {
+  color: transparent;
+  caret-color: var(--text);
+}
+.input-row input.hidden-val:focus {
+  color: var(--text);
+}
+.input-row input.hidden-val::placeholder { color: transparent; }
+
+/* ── Back to today button ── */
+.back-today-btn {
+  display: none;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--blue);
+  background: var(--blue-light);
+  border: 1.5px solid rgba(37,99,235,0.25);
+  border-radius: 20px;
+  padding: 3px 11px 3px 8px;
+  cursor: pointer;
+  touch-action: manipulation;
+  margin: 3px auto 0;
+}
+.back-today-btn.visible { display: inline-flex; }
+.back-today-btn svg { width: 11px; height: 11px; flex-shrink: 0; }
+.input-disabled-msg {
+  text-align: center;
+  color: var(--muted);
+  font-size: 14px;
+  padding: 40px 0;
+  line-height: 1.8;
+}
+
+/* ── Saved badge ── */
+.saved-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--green);
+  background: var(--green-light);
+  padding: 2px 7px;
+  border-radius: 6px;
+  margin-left: 6px;
+}
+
+/* ── Person dots indicator ── */
+.ps-dots {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 0 1px;
+}
+.ps-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--border);
+  transition: all 0.22s ease;
+  flex-shrink: 0;
+}
+.ps-dot.active {
+  width: 14px;
+  border-radius: 3px;
+}
+.ps-dot.active.dot-all { background: linear-gradient(90deg, var(--p1) 50%, var(--p2) 50%); }
+.ps-dot.active.dot-p1 { background: var(--p1); }
+.ps-dot.active.dot-p2 { background: var(--p2); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <span class="header-title">資産管理</span>
+    <span class="header-date" id="today-date"></span>
+  </div>
+  <div class="person-switch" id="person-switch">
+    <button class="ps-btn all active" data-person="all" id="ps-all">合算</button>
+    <button class="ps-btn p1" data-person="0" id="ps-0">たろう</button>
+    <button class="ps-btn p2" data-person="1" id="ps-1">はなこ</button>
+  </div>
+  <div class="ps-dots" id="ps-dots">
+    <span class="ps-dot active dot-all" data-dot="all"></span>
+    <span class="ps-dot dot-p1" data-dot="0"></span>
+    <span class="ps-dot dot-p2" data-dot="1"></span>
+  </div>
+  <div class="mode-stripe" id="mode-stripe"></div>
+</div>
+
+<!-- サマリー -->
+<div class="screen active" id="screen-summary">
+  <div id="combined-cards" style="display:none">
+    <div class="combined-row">
+      <div class="combined-card">
+        <div class="combined-card-label p1" id="c-name-0">たろう</div>
+        <div class="combined-total" id="c-total-0">¥0</div>
+        <div class="combined-sub" id="c-gain-0">—</div>
+      </div>
+      <div class="combined-card">
+        <div class="combined-card-label p2" id="c-name-1">はなこ</div>
+        <div class="combined-total" id="c-total-1">¥0</div>
+        <div class="combined-sub" id="c-gain-1">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card hero-card" id="summary-hero">
+    <div class="hero-label" id="summary-hero-label">総資産</div>
+    <div class="hero-month" id="summary-hero-month"></div>
+    <div class="hero-value" id="total-amount">¥0</div>
+    <div class="hero-stats">
+      <div>
+        <div class="hero-stat-label">投資元本</div>
+        <div class="hero-stat-value" id="total-cost">¥0</div>
+      </div>
+      <div>
+        <div class="hero-stat-label">含み損益</div>
+        <div class="hero-stat-value" id="total-gain">¥0</div>
+      </div>
+      <div>
+        <div class="hero-stat-label">損益率</div>
+        <div class="hero-stat-value" id="total-pct">0.0%</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label">資産配分</div>
+    <div class="donut-wrap">
+      <svg id="donut-svg" width="116" height="116" viewBox="0 0 116 116"></svg>
+      <div class="legend" id="donut-legend"></div>
+    </div>
+  </div>
+
+  <div class="section-title">カテゴリ別</div>
+  <div class="card" id="category-list"></div>
+  <div id="summary-empty" class="empty" style="display:none">
+    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"/></svg>
+    月次入力を行うとここに集計が表示されます
+  </div>
+</div>
+
+<!-- 月次入力 -->
+<div class="screen" id="screen-input">
+  <div class="month-nav">
+    <button class="month-nav-btn" id="prev-month-btn">‹</button>
+    <div style="flex:1;text-align:center;min-width:0;">
+      <button class="month-nav-label" id="input-month-label" style="background:none;border:none;cursor:pointer;font-size:16px;font-weight:800;letter-spacing:-0.02em;color:var(--text);padding:4px 8px;border-radius:8px;transition:background 0.15s;" onclick="openMonthPicker()"></button>
+      <button class="back-today-btn" id="back-to-today-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 0 1 2.25-2.25h13.5A2.25 2.25 0 0 1 21 7.5v11.25m-18 0A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75m-18 0v-7.5A2.25 2.25 0 0 1 5.25 9h13.5A2.25 2.25 0 0 1 21 11.25v7.5m-9-6h.008v.008H12v-.008ZM12 15h.008v.008H12V15Zm0 2.25h.008v.008H12v-.008Z"/></svg>
+        今月に戻る
+      </button>
+    </div>
+    <button class="month-nav-btn" id="next-month-btn">›</button>
+  </div>
+  <div id="input-list"></div>
+  <div id="input-empty" class="empty" style="display:none">
+    <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25ZM6.75 12h.008v.008H6.75V12Zm0 3h.008v.008H6.75V15Zm0 3h.008v.008H6.75V18Z"/></svg>
+    設定タブから資産を登録すると<br>入力欄が表示されます
+  </div>
+  <div id="input-combined-msg" class="input-disabled-msg" style="display:none">
+    <svg style="width:44px;height:44px;margin:0 auto 12px;opacity:0.4;display:block;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/></svg>
+    合算表示中は入力できません<br>個人を選択して入力してください
+  </div>
+  <div class="save-bar" id="save-bar" style="display:none">
+    <button class="save-bar-btn" id="save-input-btn">保存する</button>
+  </div>
+</div>
+
+<!-- 月ピッカー -->
+<div class="month-picker-overlay" id="month-picker-overlay">
+  <div class="month-picker-sheet">
+    <div class="month-picker-handle"></div>
+    <div class="month-picker-title">年月を選択</div>
+    <div class="month-picker-drums">
+      <div class="drum-col" id="drum-year"></div>
+      <div class="drum-col" id="drum-month"></div>
+    </div>
+    <div class="month-picker-btns">
+      <button class="btn btn-cancel" id="month-picker-cancel">キャンセル</button>
+      <button class="btn btn-primary" id="month-picker-ok">決定</button>
+    </div>
+  </div>
+</div>
+
+<!-- 推移 -->
+<div class="screen" id="screen-trend">
+  <div class="chart-card">
+    <div class="chart-card-title" id="trend-chart-title">資産推移（過去12か月）</div>
+    <div class="chart-toggle">
+      <button class="chart-toggle-btn active" id="chart-type-stacked">積み上げ棒</button>
+      <button class="chart-toggle-btn" id="chart-type-line">折れ線</button>
+    </div>
+    <div class="period-toggle">
+      <button class="period-btn" id="period-3">3ヶ月</button>
+      <button class="period-btn" id="period-6">6ヶ月</button>
+      <button class="period-btn active" id="period-12">12ヶ月</button>
+    </div>
+    <div id="trend-chart-container" style="width:100%;min-height:210px;"></div>
+  </div>
+  <div class="section-title">月別サマリー</div>
+  <div id="trend-list"></div>
+  <div id="trend-empty" class="empty" style="display:none">
+    <div class="empty-icon">📈</div>
+    月次データを入力すると<br>推移グラフが表示されます
+  </div>
+</div>
+
+<!-- 設定 -->
+<div class="screen" id="screen-settings">
+  <div class="setting-section">
+    <div class="setting-section-title">名前の設定</div>
+    <div class="name-edit-row">
+      <label style="color:var(--p1)">人物1</label>
+      <input id="name-input-0" type="text" placeholder="例：たろう">
+    </div>
+    <div class="name-edit-row">
+      <label style="color:var(--p2)">人物2</label>
+      <input id="name-input-1" type="text" placeholder="例：はなこ">
+    </div>
+    <button class="setting-btn" id="save-names-btn" style="margin-top:6px;">
+      <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+      名前を保存
+    </button>
+  </div>
+
+  <div class="setting-section">
+    <div class="setting-section-title" id="assets-section-label">資産管理</div>
+    <div id="assets-list"></div>
+    <div id="assets-empty" class="empty" style="display:none;padding:20px 0;">
+      <div class="empty-icon">🏦</div>
+      資産がまだありません<br>下のボタンから追加してください
+    </div>
+    <div id="assets-combined-msg" style="display:none;font-size:13px;color:var(--muted);padding:4px 0 10px;">
+      合算表示中です。下のボタンを押すと個人を選んで追加できます
+    </div>
+    <button class="add-asset-btn" id="add-asset-btn">
+      <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/></svg>
+      資産（口座）を追加
+    </button>
+  </div>
+
+  <div class="setting-section">
+    <div class="setting-section-title">データ管理</div>
+    <button class="setting-btn" id="export-btn">
+      <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"/></svg>
+      データをエクスポート
+    </button>
+    <div class="setting-desc">全データをJSONファイルで保存します</div>
+    <label class="setting-btn" style="display:flex;cursor:pointer;">
+      <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+      データをインポート
+      <input type="file" id="import-input" accept=".json" style="display:none">
+    </label>
+    <div class="setting-desc">バックアップJSONを読み込んでデータを復元します</div>
+  </div>
+
+  <div class="setting-section">
+    <div class="setting-section-title">危険な操作</div>
+    <button class="setting-btn danger" id="delete-all-btn">
+      <svg class="s-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"/></svg>
+      全データを削除
+    </button>
+    <div class="setting-desc">すべてのデータが削除されます。元に戻せません。</div>
+  </div>
+
+  <div style="text-align:center;margin-top:24px;margin-bottom:8px;font-size:12px;color:var(--muted);">資産管理 Ver 2.1</div>
+</div>
+
+<!-- 資産追加は設定タブ内の常設ボタンから行う(旧FABは廃止) -->
+
+<!-- Tab -->
+<div class="tab-bar">
+  <button class="tab-btn active" data-screen="summary">
+    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6a7.5 7.5 0 1 0 7.5 7.5h-7.5V6Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 10.5H21A7.5 7.5 0 0 0 13.5 3v7.5Z"/></svg>
+    サマリー
+  </button>
+  <button class="tab-btn" data-screen="input">
+    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"/></svg>
+    月次入力
+  </button>
+  <button class="tab-btn" data-screen="trend">
+    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18 9 11.25l4.306 4.306a11.95 11.95 0 0 1 5.814-5.518l2.74-1.22m0 0-5.94-2.281m5.94 2.28-2.28 5.941"/></svg>
+    推移
+  </button>
+  <button class="tab-btn" data-screen="settings">
+    <svg class="tab-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/></svg>
+    設定
+  </button>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="modal-title">資産を追加</div>
+    <div class="field">
+      <label>種類</label>
+      <select id="f-type">
+        <option value="投資信託">投資信託</option>
+        <option value="株式">株式</option>
+        <option value="預貯金">預貯金</option>
+      </select>
+    </div>
+    <div class="field">
+      <label id="f-name-label">銘柄名</label>
+      <input id="f-name" type="text" placeholder="例：eMAXIS Slim 全世界株式">
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-cancel" id="modal-cancel">キャンセル</button>
+      <button class="btn btn-primary" id="modal-save">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal (iOS standalone PWA では window.confirm() が動作しないため自作) -->
+<div class="overlay" id="confirm-overlay">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="confirm-title">確認</div>
+    <div id="confirm-message" style="color:var(--muted);font-size:14px;line-height:1.7;white-space:pre-line;"></div>
+    <div class="modal-btns">
+      <button class="btn btn-cancel" id="confirm-cancel">キャンセル</button>
+      <button class="btn btn-primary" id="confirm-ok">削除</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════
+//  Constants
+// ══════════════════════════════════════
+const CAT_COLORS = { '投資信託':'#2563EB', '株式':'#059669', '預貯金':'#D97706' };
+const P_COLORS = ['#2563EB', '#7C3AED'];
+const STRIPE_COLORS = ['#2563EB', '#7C3AED', '#374151'];
+
+// ══════════════════════════════════════
+//  Storage helpers
+// ══════════════════════════════════════
+function load(key, def) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : def; } catch { return def; }
+}
+function save(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
+// ══════════════════════════════════════
+//  Migration
+// ══════════════════════════════════════
+(function migrate() {
+  if (localStorage.getItem('v2_migrated')) return;
+  const old = load('pf_holdings', []);
+  if (old.length > 0) {
+    save('assets_0', old.map(h => ({ id: h.id, name: h.name, type: h.type })));
+  }
+  localStorage.setItem('v2_migrated', '1');
+})();
+
+// ══════════════════════════════════════
+//  Sample data
+// ══════════════════════════════════════
+const MONTHS = ['2025-07','2025-08','2025-09','2025-10','2025-11','2025-12',
+                '2026-01','2026-02','2026-03','2026-04','2026-05','2026-06'];
+
+const SAMPLE = {
+  names: ['たろう','はなこ'],
+  assets: [
+    [
+      { id:'a1', name:'eMAXIS Slim 全世界株式（オール・カントリー）', type:'投資信託' },
+      { id:'a2', name:'SBI・V・S&P500インデックス・ファンド', type:'投資信託' },
+      { id:'a3', name:'トヨタ自動車（7203）', type:'株式' },
+      { id:'a4', name:'楽天銀行 普通預金', type:'預貯金' },
+      { id:'a5', name:'三菱UFJ銀行 普通預金', type:'預貯金' },
+      { id:'a6', name:'ゆうちょ銀行 通常貯金', type:'預貯金' },
+    ],
+    [
+      { id:'b1', name:'eMAXIS Slim 国内株式（TOPIX）', type:'投資信託' },
+      { id:'b2', name:'ニッセイ外国株式インデックス', type:'投資信託' },
+      { id:'b3', name:'ソニーグループ（6758）', type:'株式' },
+      { id:'b4', name:'住信SBIネット銀行 普通預金', type:'預貯金' },
+      { id:'b5', name:'イオン銀行 普通預金', type:'預貯金' },
+      { id:'b6', name:'auじぶん銀行 普通預金', type:'預貯金' },
+    ],
+  ],
+  records: [null, null],
+};
+
+(function buildSampleRecords() {
+  const rows0 = [
+    [1180000,1000000,820000,700000,420000,380000,680000,1200000,300000],
+    [1210000,1020000,845000,715000,405000,380000,690000,1200000,302000],
+    [1255000,1040000,870000,730000,430000,390000,700000,1210000,304000],
+    [1230000,1060000,855000,745000,415000,390000,715000,1210000,305000],
+    [1280000,1080000,895000,760000,445000,400000,720000,1220000,306000],
+    [1320000,1100000,920000,775000,460000,400000,730000,1220000,308000],
+    [1360000,1120000,950000,790000,470000,410000,740000,1230000,310000],
+    [1310000,1140000,920000,805000,450000,410000,750000,1230000,311000],
+    [1380000,1160000,975000,820000,490000,420000,760000,1240000,312000],
+    [1420000,1180000,1005000,835000,510000,430000,770000,1240000,314000],
+    [1465000,1200000,1035000,850000,525000,440000,785000,1250000,315000],
+    [1510000,1220000,1070000,865000,540000,450000,800000,1260000,317000],
+  ];
+  const rows1 = [
+    [650000,550000,480000,420000,310000,280000,520000,800000,200000],
+    [665000,562000,492000,430000,298000,280000,530000,800000,202000],
+    [690000,575000,510000,440000,315000,290000,538000,810000,204000],
+    [672000,588000,498000,450000,302000,290000,545000,810000,205000],
+    [705000,600000,520000,460000,325000,300000,552000,820000,206000],
+    [728000,615000,538000,470000,336000,300000,558000,820000,208000],
+    [750000,628000,555000,482000,345000,310000,565000,830000,210000],
+    [720000,642000,535000,494000,330000,310000,572000,830000,211000],
+    [768000,655000,570000,506000,358000,320000,578000,840000,212000],
+    [792000,668000,588000,518000,372000,330000,585000,840000,214000],
+    [818000,682000,608000,530000,384000,340000,592000,850000,215000],
+    [845000,695000,630000,542000,395000,350000,600000,860000,217000],
+  ];
+
+  SAMPLE.records[0] = [];
+  SAMPLE.records[1] = [];
+  MONTHS.forEach((mk, i) => {
+    const r0 = rows0[i];
+    SAMPLE.records[0].push(
+      {month:mk,assetId:'a1',amount:r0[0],cost:r0[1]},
+      {month:mk,assetId:'a2',amount:r0[2],cost:r0[3]},
+      {month:mk,assetId:'a3',amount:r0[4],cost:r0[5]},
+      {month:mk,assetId:'a4',amount:r0[6],cost:r0[6]},
+      {month:mk,assetId:'a5',amount:r0[7],cost:r0[7]},
+      {month:mk,assetId:'a6',amount:r0[8],cost:r0[8]}
+    );
+    const r1 = rows1[i];
+    SAMPLE.records[1].push(
+      {month:mk,assetId:'b1',amount:r1[0],cost:r1[1]},
+      {month:mk,assetId:'b2',amount:r1[2],cost:r1[3]},
+      {month:mk,assetId:'b3',amount:r1[4],cost:r1[5]},
+      {month:mk,assetId:'b4',amount:r1[6],cost:r1[6]},
+      {month:mk,assetId:'b5',amount:r1[7],cost:r1[7]},
+      {month:mk,assetId:'b6',amount:r1[8],cost:r1[8]}
+    );
+  });
+})();
+
+// ══════════════════════════════════════
+//  State
+// ══════════════════════════════════════
+let names = (() => {
+  const v = load('person_names', null);
+  return (v && v.length === 2) ? v : SAMPLE.names.slice();
+})();
+
+let assetsData = [0,1].map(p => {
+  const v = load(`assets_${p}`, null);
+  return (v && v.length > 0) ? v : SAMPLE.assets[p].map(a => ({...a}));
+});
+
+let recordsData = [0,1].map(p => {
+  const v = load(`records_${p}`, null);
+  return (v && v.length > 0) ? v : SAMPLE.records[p].map(r => ({...r}));
+});
+
+let currentScreen = 'summary';
+// 画面ごとに選択可能な人物を明示する。'input' は合算(all)を許可しない設計。
+const SCREEN_ALLOWS_ALL = { summary: true, input: false, trend: true, settings: true };
+function sanitizePerson(screen, person) {
+  if (person === 'all' && !SCREEN_ALLOWS_ALL[screen]) return 0;
+  return person;
+}
+let personByScreen = { summary: 'all', input: 0, trend: 0, settings: 0 };
+let currentPerson = personByScreen[currentScreen];
+let editingAssetId = null;
+let inputYear, inputMonth;
+(function() { const d = new Date(); inputYear = d.getFullYear(); inputMonth = d.getMonth() + 1; })();
+let trendChartType = 'stacked'; // 'stacked' | 'line'
+let trendPeriod = 12; // 3 | 6 | 12
+
+// ══════════════════════════════════════
+//  Helpers
+// ══════════════════════════════════════
+const fmt = n => Math.round(n).toLocaleString('ja-JP');
+const fmtMan = n => {
+  const m = Math.abs(Math.round(n));
+  if (m >= 100000000) return (m / 100000000).toFixed(2) + '億';
+  if (m >= 10000) return (m / 10000).toFixed(1) + '万';
+  return m.toLocaleString('ja-JP');
+};
+const fmtSign = n => (n >= 0 ? '+¥' : '−¥') + fmt(Math.abs(n));
+const fmtSignShort = n => (n >= 0 ? '+¥' : '−¥') + fmtMan(Math.abs(n));
+const fmtPct = n => (n >= 0 ? '+' : '') + n.toFixed(2) + '%';
+const gainClass = n => n >= 0 ? 'gain' : 'loss';
+const todayStr = () => new Date().toLocaleDateString('ja-JP', {year:'numeric', month:'long', day:'numeric'});
+const monthStr = (y, m) => `${y}-${String(m).padStart(2,'0')}`;
+const monthLabel = (y, m) => `${y}年${m}月`;
+const monthLabelFromKey = mk => { const [y,m]=mk.split('-'); return `${y}年${parseInt(m)}月`; };
+const isAll = () => currentPerson === 'all';
+
+function getAssets(p) { return assetsData[p]; }
+function getRecords(p) { return recordsData[p]; }
+
+function getLatestMonth(p) {
+  const recs = getRecords(p);
+  if (!recs.length) return null;
+  const ms = [...new Set(recs.map(r => r.month))].sort();
+  return ms[ms.length - 1];
+}
+
+function getRecordsForMonth(p, mk) {
+  return getRecords(p).filter(r => r.month === mk);
+}
+
+function aggregateMonth(p, mk) {
+  const recs = getRecordsForMonth(p, mk);
+  const total = recs.reduce((s, r) => s + r.amount, 0);
+  const invRecs = recs.filter(r => {
+    const a = getAssets(p).find(a => a.id === r.assetId);
+    return a && a.type !== '預貯金';
+  });
+  const cost = invRecs.reduce((s, r) => s + (r.cost || 0), 0);
+  const gain = total - cost;
+  return { total, cost, gain };
+}
+
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2400);
+}
+
+// iOS standalone PWA では window.confirm() が呼ばれても何も表示されず
+// 常に false 相当の挙動になってしまうため、自作モーダルで代替する。
+let _confirmResolve = null;
+function askConfirm(message, opts = {}) {
+  const { title = '確認', okLabel = '削除' } = opts;
+  return new Promise(resolve => {
+    _confirmResolve = resolve;
+    document.getElementById('confirm-title').textContent = title;
+    document.getElementById('confirm-message').textContent = message;
+    document.getElementById('confirm-ok').textContent = okLabel;
+    document.getElementById('confirm-overlay').classList.add('open');
+  });
+}
+function _settleConfirm(result) {
+  document.getElementById('confirm-overlay').classList.remove('open');
+  if (_confirmResolve) { _confirmResolve(result); _confirmResolve = null; }
+}
+document.getElementById('confirm-ok').addEventListener('click', () => _settleConfirm(true));
+document.getElementById('confirm-cancel').addEventListener('click', () => _settleConfirm(false));
+document.getElementById('confirm-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) _settleConfirm(false);
+});
+
+// ══════════════════════════════════════
+//  Person switch
+// ══════════════════════════════════════
+function updatePersonSwitch() {
+  [0, 1, 'all'].forEach(p => {
+    const id = p === 'all' ? 'ps-all' : `ps-${p}`;
+    const btn = document.getElementById(id);
+    btn.textContent = p === 'all' ? '合算' : names[p];
+    btn.classList.toggle('active', currentPerson === p);
+    btn.classList.toggle('disabled', p === 'all' && !SCREEN_ALLOWS_ALL[currentScreen]);
+    // 月次入力・設定タブでは合算ボタンを非表示
+    if (p === 'all') {
+      const hideAll = currentScreen === 'input' || currentScreen === 'settings';
+      btn.classList.toggle('screen-hidden', hideAll);
+    }
+  });
+  const stripe = document.getElementById('mode-stripe');
+  stripe.style.background = isAll()
+    ? 'linear-gradient(90deg,var(--p1) 50%,var(--p2) 50%)'
+    : (P_COLORS[currentPerson] || '#374151');
+
+  // Update dot indicators
+  const dotMap = { 'all': 'dot-all', 0: 'dot-p1', 1: 'dot-p2' };
+  document.querySelectorAll('.ps-dot').forEach(dot => {
+    const key = dot.dataset.dot;
+    const keyVal = key === 'all' ? 'all' : parseInt(key);
+    const isActive = keyVal === currentPerson;
+    dot.classList.toggle('active', isActive);
+    // Remove all color classes then add correct one if active
+    dot.classList.remove('dot-all', 'dot-p1', 'dot-p2');
+    if (isActive) dot.classList.add(dotMap[keyVal]);
+  });
+  // Hide all-dot when all is not available on this screen
+  const allDot = document.querySelector('.ps-dot[data-dot="all"]');
+  if (allDot) {
+    const hideAll = currentScreen === 'input' || currentScreen === 'settings';
+    allDot.style.display = hideAll ? 'none' : '';
+  }
+}
+
+document.getElementById('person-switch').addEventListener('click', e => {
+  const btn = e.target.closest('.ps-btn');
+  if (!btn || btn.classList.contains('disabled')) return;
+  const raw = btn.dataset.person;
+  const requested = raw === 'all' ? 'all' : parseInt(raw);
+  currentPerson = sanitizePerson(currentScreen, requested);
+  personByScreen[currentScreen] = currentPerson;
+  updatePersonSwitch();
+  renderAll();
+});
+
+// ── Swipe to switch person ──
+(function initSwipe() {
+  // Person switcher swipe order: all → 0 → 1 → all (circular)
+  const ORDER_WITH_ALL = ['all', 0, 1];
+  const ORDER_NO_ALL   = [0, 1];
+
+  function getOrder() {
+    return SCREEN_ALLOWS_ALL[currentScreen] ? ORDER_WITH_ALL : ORDER_NO_ALL;
+  }
+  function switchPerson(delta) {
+    const order = getOrder();
+    const idx = order.indexOf(currentPerson);
+    const next = order[(idx + delta + order.length) % order.length];
+    currentPerson = next;
+    personByScreen[currentScreen] = next;
+    updatePersonSwitch();
+    renderAll();
+  }
+
+  let sx = 0, sy = 0;
+  const body = document.body;
+  body.addEventListener('touchstart', e => {
+    // Ignore if inside modal/overlay/input elements
+    if (e.target.closest('.overlay, input, select, textarea, .month-nav-btn, .tab-bar')) return;
+    sx = e.touches[0].clientX;
+    sy = e.touches[0].clientY;
+  }, { passive: true });
+
+  body.addEventListener('touchend', e => {
+    if (e.target.closest('.overlay, input, select, textarea, .month-nav-btn, .tab-bar')) return;
+    const dx = e.changedTouches[0].clientX - sx;
+    const dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) < 50 || Math.abs(dy) > Math.abs(dx) * 0.8) return; // not a horizontal swipe
+    switchPerson(dx < 0 ? 1 : -1);
+  }, { passive: true });
+})();
+
+const expandedCats = new Set(); // tracks which category rows are expanded
+
+// ══════════════════════════════════════
+//  Render: Summary
+// ══════════════════════════════════════
+function renderSummary() {
+  console.log('renderSummary', currentPerson);
+  const combinedCards = document.getElementById('combined-cards');
+  const heroLabel = document.getElementById('summary-hero-label');
+  const heroMonth = document.getElementById('summary-hero-month');
+
+  if (isAll()) {
+    combinedCards.style.display = 'block';
+    heroLabel.textContent = '総資産（合算）';
+
+    [0, 1].forEach(p => {
+      const mk = getLatestMonth(p);
+      document.getElementById(`c-name-${p}`).textContent = names[p];
+      if (!mk) {
+        document.getElementById(`c-total-${p}`).textContent = '¥0';
+        document.getElementById(`c-gain-${p}`).textContent = 'データなし';
+        return;
+      }
+      const { total, cost, gain } = aggregateMonth(p, mk);
+      document.getElementById(`c-total-${p}`).textContent = '¥' + fmt(total);
+      const gainEl = document.getElementById(`c-gain-${p}`);
+      gainEl.textContent = cost > 0 ? `損益 ${fmtSign(gain)}` : '預貯金のみ';
+      gainEl.style.color = gain >= 0 ? 'var(--green)' : 'var(--red)';
+    });
+
+    let totalAll = 0, costAll = 0, gainAll = 0;
+    const catAll = {};
+    const latestMonths = [getLatestMonth(0), getLatestMonth(1)].filter(Boolean);
+    const latestMk = latestMonths.length ? latestMonths.reduce((a,b) => a > b ? a : b) : null;
+    heroMonth.textContent = latestMk ? monthLabelFromKey(latestMk) + ' 時点' : '';
+
+    [0, 1].forEach(p => {
+      const mk = getLatestMonth(p);
+      if (!mk) return;
+      const recs = getRecordsForMonth(p, mk);
+      recs.forEach(r => {
+        const a = getAssets(p).find(a => a.id === r.assetId);
+        if (!a) return;
+        totalAll += r.amount;
+        if (!catAll[a.type]) catAll[a.type] = { amount: 0, cost: 0, items: [] };
+        catAll[a.type].amount += r.amount;
+        catAll[a.type].items.push({ name: a.name, amount: r.amount, cost: r.cost || 0, isDeposit: a.type === '預貯金' });
+        if (a.type !== '預貯金') {
+          const g = r.amount - (r.cost || 0);
+          costAll += r.cost || 0;
+          gainAll += g;
+          catAll[a.type].cost += r.cost || 0;
+        }
+      });
+    });
+    renderHero(totalAll, costAll, gainAll);
+    renderDonut(catAll, totalAll);
+    renderCategoryList(catAll);
+
+  } else {
+    combinedCards.style.display = 'none';
+    heroLabel.textContent = `${names[currentPerson]}の総資産`;
+
+    const mk = getLatestMonth(currentPerson);
+    heroMonth.textContent = mk ? monthLabelFromKey(mk) + ' 時点' : '';
+
+    if (!mk) {
+      renderHero(0, 0, 0);
+      renderDonut({}, 0);
+      document.getElementById('category-list').innerHTML =
+        '<div class="empty" style="padding:20px 0">月次入力を行うと表示されます</div>';
+      document.getElementById('summary-empty').style.display = 'none';
+      return;
+    }
+    const recs = getRecordsForMonth(currentPerson, mk);
+    const total = recs.reduce((s, r) => s + r.amount, 0);
+    const cats = {};
+    let cost = 0, gain = 0;
+    recs.forEach(r => {
+      const a = getAssets(currentPerson).find(a => a.id === r.assetId);
+      if (!a) return;
+      if (!cats[a.type]) cats[a.type] = { amount: 0, cost: 0, items: [] };
+      cats[a.type].amount += r.amount;
+      cats[a.type].items.push({ name: a.name, amount: r.amount, cost: r.cost || 0, isDeposit: a.type === '預貯金' });
+      if (a.type !== '預貯金') {
+        cats[a.type].cost += r.cost || 0;
+        cost += r.cost || 0;
+        gain += r.amount - (r.cost || 0);
+      }
+    });
+    renderHero(total, cost, gain);
+    renderDonut(cats, total);
+    renderCategoryList(cats);
+  }
+}
+
+function renderHero(total, cost, gain) {
+  const pct = cost > 0 ? (gain / cost) * 100 : 0;
+  document.getElementById('total-amount').textContent = '¥' + fmt(total);
+  document.getElementById('total-cost').textContent = '¥' + fmt(cost);
+  const gainEl = document.getElementById('total-gain');
+  gainEl.textContent = fmtSign(gain);
+  gainEl.style.color = gain >= 0 ? '#6ee7b7' : '#fca5a5';
+  const pctEl = document.getElementById('total-pct');
+  pctEl.textContent = fmtPct(pct);
+  pctEl.style.color = gain >= 0 ? '#6ee7b7' : '#fca5a5';
+}
+
+function toggleCat(key) {
+  if (expandedCats.has(key)) {
+    expandedCats.delete(key);
+  } else {
+    expandedCats.add(key);
+  }
+  // Re-render only the category list without touching hero/donut
+  const cl = document.getElementById('category-list');
+  _renderCatListInner(cl, window._lastCats);
+}
+
+function renderCategoryList(cats) {
+  window._lastCats = cats; // cache for accordion toggle re-render
+  const cl = document.getElementById('category-list');
+  _renderCatListInner(cl, cats);
+}
+
+function _renderCatListInner(cl, cats) {
+  if (!cats) return;
+  const keys = Object.keys(cats);
+  if (!keys.length) {
+    cl.innerHTML = '<div class="empty" style="padding:20px 0">データがありません</div>';
+    return;
+  }
+  cl.innerHTML = keys.map(k => {
+    const c = cats[k];
+    const isDeposit = k === '預貯金';
+    const g = isDeposit ? 0 : c.amount - c.cost;
+    const pct = (!isDeposit && c.cost > 0) ? (g / c.cost) * 100 : 0;
+    const isExpanded = expandedCats.has(k);
+    const items = c.items || [];
+    const hasItems = items.length > 0;
+
+    const gainHtml = isDeposit ? '' : `
+      <div class="cat-gain">
+        <span class="gain-pill ${gainClass(g)}">${fmtSign(g)}</span>
+        <span style="color:var(--muted);font-size:11px;margin-left:4px;">${fmtPct(pct)}</span>
+      </div>`;
+
+    const chevron = hasItems ? `
+      <span class="cat-chevron${isExpanded ? ' open' : ''}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5"/></svg>
+      </span>` : '';
+
+    // Individual asset rows
+    const itemRows = (hasItems && isExpanded) ? items.map(item => {
+      const itemG = item.isDeposit ? null : item.amount - item.cost;
+      const itemPct = (!item.isDeposit && item.cost > 0) ? (itemG / item.cost) * 100 : null;
+      return `<div class="cat-detail-row">
+        <div class="cat-detail-name">${item.name}</div>
+        <div class="cat-detail-right">
+          <div class="cat-detail-amount">¥${fmt(item.amount)}</div>
+          ${itemG !== null ? `<div class="cat-detail-gain">
+            <span class="${gainClass(itemG)}" style="font-size:10px;font-weight:700;">${fmtSign(itemG)}</span>
+            <span style="color:var(--muted);font-size:10px;margin-left:3px;">${fmtPct(itemPct)}</span>
+          </div>` : ''}
+        </div>
+      </div>`;
+    }).join('') : '';
+
+    return `<div class="cat-row${hasItems ? ' cat-row-clickable' : ''}${isExpanded ? ' cat-row-expanded' : ''}" ${hasItems ? `onclick="toggleCat('${k}')"` : ''}>
+      <div class="cat-name">
+        <span class="cat-dot" style="background:${CAT_COLORS[k]||'#94a3b8'}"></span>
+        <span>${k}</span>
+        ${hasItems ? `<span class="cat-count">${items.length}件</span>` : ''}
+      </div>
+      <div class="cat-right">
+        <div class="cat-amount">¥${fmt(c.amount)}</div>
+        ${gainHtml}
+      </div>
+      ${chevron}
+    </div>
+    ${itemRows ? `<div class="cat-detail-list">${itemRows}</div>` : ''}`;
+  }).join('<div class="cat-divider"></div>');
+}
+
+function renderDonut(cats, total) {
+  const svg = document.getElementById('donut-svg');
+  const legend = document.getElementById('donut-legend');
+  const R = 44, CX = 58, CY = 58, stroke = 20;
+  const circ = 2 * Math.PI * R;
+  const keys = Object.keys(cats);
+
+  if (!keys.length) {
+    svg.innerHTML = `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none" stroke="#E5E9F0" stroke-width="${stroke}"/>`;
+    legend.innerHTML = '';
+    return;
+  }
+
+  // Build slices with proper offset
+  const slices = [];
+  let offset = 0;
+  keys.forEach(k => {
+    const pct = total > 0 ? cats[k].amount / total : 0;
+    const dash = pct * circ;
+    const gap = circ - dash;
+    slices.push({ k, dash, gap, offset });
+    offset += dash;
+  });
+
+  // Center label: total amount in 万 notation
+  const totalLabel = total >= 10000 ? (total / 10000).toFixed(0) + '万' : fmt(total);
+  svg.innerHTML = slices.map(s =>
+    `<circle cx="${CX}" cy="${CY}" r="${R}" fill="none"
+      stroke="${CAT_COLORS[s.k] || '#94a3b8'}"
+      stroke-width="${stroke}"
+      stroke-dasharray="${s.dash} ${s.gap}"
+      stroke-dashoffset="${circ / 4 - s.offset}"
+      transform="rotate(-90 ${CX} ${CY})"/>`
+  ).join('') +
+    `<text x="${CX}" y="${CY - 6}" text-anchor="middle" font-size="9" fill="#9CA3AF" font-family="-apple-system,sans-serif" font-weight="600">合計</text>
+     <text x="${CX}" y="${CY + 8}" text-anchor="middle" font-size="13" fill="#111827" font-family="-apple-system,sans-serif" font-weight="800">${totalLabel}</text>`;
+
+  legend.innerHTML = keys.map(k => {
+    const pct = total > 0 ? (cats[k].amount / total * 100).toFixed(1) : '0.0';
+    return `<div class="legend-item">
+      <span class="legend-label"><span class="cat-dot" style="background:${CAT_COLORS[k]||'#94a3b8'}"></span>${k}</span>
+      <span class="legend-pct">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════
+//  Render: Assets (設定内)
+// ══════════════════════════════════════
+function renderAssets() {
+  console.log('renderAssets', currentPerson);
+  const label = document.getElementById('assets-section-label');
+  const list = document.getElementById('assets-list');
+  const empty = document.getElementById('assets-empty');
+  const msg = document.getElementById('assets-combined-msg');
+
+  if (isAll()) {
+    list.innerHTML = '';
+    empty.style.display = 'none';
+    msg.style.display = 'block';
+    return;
+  }
+  msg.style.display = 'none';
+  label.textContent = `資産管理（${names[currentPerson]}）`;
+
+  const aList = getAssets(currentPerson);
+  if (!aList.length) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  // Get latest record totals per asset for display
+  const mk = getLatestMonth(currentPerson);
+  const latestRecs = mk ? getRecordsForMonth(currentPerson, mk) : [];
+
+  list.innerHTML = aList.map((a, i) => {
+    const rec = latestRecs.find(r => r.assetId === a.id);
+    const valHtml = rec
+      ? `<div style="font-size:13px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;margin-top:4px;">¥${fmt(rec.amount)}</div>`
+      : '';
+    return `<div class="asset-item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div style="flex:1;min-width:0;">
+          <div class="asset-name">${a.name}</div>
+          <div style="margin-top:5px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+            <span class="type-badge ${a.type}">${a.type}</span>
+            ${valHtml}
+          </div>
+        </div>
+      </div>
+      <div class="asset-actions">
+        <div class="reorder-btns">
+          <button class="reorder-btn" onclick="moveAsset('${a.id}',-1)" ${i === 0 ? 'disabled' : ''} aria-label="上に移動">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15l-6-6-6 6"/></svg>
+          </button>
+          <button class="reorder-btn" onclick="moveAsset('${a.id}',1)" ${i === aList.length - 1 ? 'disabled' : ''} aria-label="下に移動">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+        </div>
+        <button class="action-btn" onclick="openEditAsset('${a.id}')">編集</button>
+        <button class="action-btn del" onclick="deleteAsset('${a.id}')">削除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function moveAsset(id, dir) {
+  if (isAll()) return;
+  const p = currentPerson;
+  const list = assetsData[p];
+  const idx = list.findIndex(a => a.id === id);
+  const newIdx = idx + dir;
+  if (idx < 0 || newIdx < 0 || newIdx >= list.length) return;
+  [list[idx], list[newIdx]] = [list[newIdx], list[idx]];
+  save(`assets_${p}`, list);
+  renderAssets();
+}
+
+// ══════════════════════════════════════
+//  Render: Monthly Input
+// ══════════════════════════════════════
+// カンマ表示用ヘルパー：入力フィールドの生の数値をカンマ付きで表示する
+function updateAmountDisplay(inp) {
+  const wrap = inp.closest('.amount-input-wrap');
+  if (!wrap) return;
+  const disp = wrap.querySelector('.amount-display');
+  if (!disp) return;
+  const raw = inp.value.replace(/[^0-9]/g, '');
+  if (!raw) {
+    disp.textContent = '¥0';
+    disp.classList.add('empty');
+  } else {
+    disp.textContent = '¥' + Number(raw).toLocaleString('ja-JP');
+    disp.classList.remove('empty');
+  }
+}
+
+function renderInput() {
+  console.log('renderInput', currentPerson);
+  document.getElementById('input-month-label').textContent = monthLabel(inputYear, inputMonth);
+
+  // 今月以外なら「今月に戻る」ボタンを表示
+  const nowD = new Date();
+  const isCurrentMonth = inputYear === nowD.getFullYear() && inputMonth === nowD.getMonth() + 1;
+  const backBtn = document.getElementById('back-to-today-btn');
+  backBtn.classList.toggle('visible', !isCurrentMonth);
+  const list = document.getElementById('input-list');
+  const empty = document.getElementById('input-empty');
+  const saveBar = document.getElementById('save-bar');
+  const combinedMsg = document.getElementById('input-combined-msg');
+
+  if (isAll()) {
+    list.innerHTML = '';
+    empty.style.display = 'none';
+    saveBar.style.display = 'none';
+    combinedMsg.style.display = 'block';
+    return;
+  }
+  combinedMsg.style.display = 'none';
+
+  const p = currentPerson;
+  const aList = getAssets(p);
+  if (!aList.length) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    saveBar.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  saveBar.style.display = 'block';
+
+  const mk = monthStr(inputYear, inputMonth);
+  const existing = getRecords(p).filter(r => r.month === mk);
+
+  // 「前月」ラベル判定用
+  const prevY = inputMonth === 1 ? inputYear - 1 : inputYear;
+  const prevM = inputMonth === 1 ? 12 : inputMonth - 1;
+  const strictPrevMk = monthStr(prevY, prevM);
+
+  // 参照表示・コピーボタン共通：現在月より過去の全データから資産ごとに最新を使う
+  const refRecMap = {};
+  getRecords(p).filter(r => r.month < mk).forEach(r => {
+    if (!refRecMap[r.assetId] || r.month > refRecMap[r.assetId].month) {
+      refRecMap[r.assetId] = r;
+    }
+  });
+  // コピー用：過去データの中で最新のもの(参照表示と同じデータソースに統一)
+  const prevRecMap = refRecMap;
+
+  list.innerHTML = aList.map(a => {
+    const ex = existing.find(r => r.assetId === a.id);
+    const prev = prevRecMap[a.id];   // コピーボタン用（1ヶ月前のみ）
+    const ref  = refRecMap[a.id];    // 参照表示用（最新の過去データ）
+    const isDeposit = a.type === '預貯金';
+
+    let prevInfo = '';
+    if (ref) {
+      const refLbl = ref.month === strictPrevMk ? '前月' : monthLabelFromKey(ref.month);
+      prevInfo = isDeposit
+        ? refLbl + '残高: ¥' + fmt(ref.amount)
+        : refLbl + '評価額: ¥' + fmt(ref.amount) + '　元本: ¥' + fmt(ref.cost || 0);
+    }
+
+    const savedBadge = ex ? '<span class="saved-badge">✓ 入力済</span>' : '';
+    const amountVal = ex ? ex.amount : '';
+    const costVal = ex ? ex.cost : '';
+
+    // コピーボタン：過去データ(直近)が存在する場合は値が0円でも対象にする
+    const hasPrevAmount = !!prev && prev.amount !== undefined && prev.amount !== null && prev.amount !== '';
+    const hasPrevCost   = !!prev && prev.cost   !== undefined && prev.cost   !== null && prev.cost   !== '';
+    const copyLbl = prev && prev.month === strictPrevMk ? '前月' : (prev ? monthLabelFromKey(prev.month) : '前月');
+
+    // テンプレートリテラルのネストを避けて変数に分離（Safari対応）
+    // amount(残高/評価額)・cost(元本) それぞれ独立して、過去データがあればコピーボタンを出す
+    let amountCopyBtnHtml = '';
+    if (isDeposit && hasPrevAmount) {
+      const prevFmt = Number(prev.amount).toLocaleString('ja-JP');
+      amountCopyBtnHtml = '<div style="padding-left:62px;margin-top:4px;">'
+        + '<button class="copy-prev-btn" data-asset-id="' + a.id + '" data-copy="amount" data-val="' + prev.amount + '" style="width:100%;text-align:center;font-size:11px;">'
+        + copyLbl + 'コピー（¥' + prevFmt + '）</button></div>';
+    }
+    let costCopyBtnHtml = '';
+    if (!isDeposit && hasPrevCost) {
+      const prevFmt = Number(prev.cost).toLocaleString('ja-JP');
+      costCopyBtnHtml = '<div style="padding-left:62px;margin-top:4px;">'
+        + '<button class="copy-prev-btn" data-asset-id="' + a.id + '" data-copy="cost" data-val="' + prev.cost + '" style="width:100%;text-align:center;font-size:11px;">'
+        + copyLbl + 'コピー（¥' + prevFmt + '）</button></div>';
+    }
+
+    const amountRow = '<div class="input-row">'
+      + '<label>' + (isDeposit ? '残高' : '評価額') + '</label>'
+      + '<div class="amount-input-wrap">'
+      + '<span class="amount-display' + (amountVal ? '' : ' empty') + '">' + (amountVal ? '¥' + Number(amountVal).toLocaleString('ja-JP') : '¥0') + '</span>'
+      + '<input type="number" inputmode="numeric" placeholder="' + (isDeposit ? '500000' : '1500000') + '"'
+      + ' class="hidden-val" data-asset-id="' + a.id + '" data-field="amount" value="' + amountVal + '">'
+      + '</div></div>'
+      + amountCopyBtnHtml;
+
+    const costRow = isDeposit ? '' : '<div class="cost-row-wrap">'
+      + '<div class="input-row" style="margin-bottom:' + (hasPrevCost ? '4px' : '0') + ';">'
+      + '<label>元本</label>'
+      + '<div class="amount-input-wrap">'
+      + '<span class="amount-display' + (costVal ? '' : ' empty') + '">' + (costVal ? '¥' + Number(costVal).toLocaleString('ja-JP') : '¥0') + '</span>'
+      + '<input type="number" inputmode="numeric" placeholder="1200000"'
+      + ' class="hidden-val" data-asset-id="' + a.id + '" data-field="cost" value="' + costVal + '">'
+      + '</div></div>'
+      + costCopyBtnHtml
+      + '</div>';
+
+    return `<div class="input-card${ex ? ' has-data' : ''}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+        <div class="input-card-name">${a.name}${savedBadge}</div>
+      </div>
+      <div style="margin-bottom:10px;"><span class="type-badge ${a.type}">${a.type}</span></div>
+      ${prevInfo ? `<div class="input-card-prev">${prevInfo}</div>` : ''}
+      ${amountRow}
+      ${costRow}
+    </div>`;
+  }).join('');
+
+  // カンマ表示・コピーイベント
+  list.querySelectorAll('.hidden-val').forEach(inp => {
+    inp.addEventListener('input', () => updateAmountDisplay(inp));
+    inp.addEventListener('focus', () => {
+      // 0の場合はクリア
+      if (inp.value === '0' || inp.value === '') inp.value = '';
+      const wrap = inp.closest('.amount-input-wrap');
+      if (wrap) wrap.querySelector('.amount-display').style.opacity = '0';
+    });
+    inp.addEventListener('blur', () => {
+      const wrap = inp.closest('.amount-input-wrap');
+      if (wrap) wrap.querySelector('.amount-display').style.opacity = '1';
+      updateAmountDisplay(inp);
+    });
+  });
+
+  list.querySelectorAll('.copy-prev-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const assetId = btn.dataset.assetId;
+      const field = btn.dataset.copy;
+      const val = btn.dataset.val;
+      const inp = list.querySelector(`input[data-asset-id="${assetId}"][data-field="${field}"]`);
+      if (inp) { inp.value = val; updateAmountDisplay(inp); }
+    });
+  });
+}
+
+function saveInput() {
+  if (isAll()) return;
+  const p = currentPerson;
+  const mk = monthStr(inputYear, inputMonth);
+  const inputs = document.querySelectorAll('#input-list input[data-asset-id]');
+  const map = {};
+  inputs.forEach(inp => {
+    const id = inp.dataset.assetId, field = inp.dataset.field;
+    if (!map[id]) map[id] = {};
+    map[id][field] = parseInt(inp.value.replace(/[^0-9]/g, ''), 10) || 0;
+  });
+  Object.entries(map).forEach(([assetId, vals]) => {
+    const a = getAssets(p).find(a => a.id === assetId);
+    const isDeposit = a && a.type === '預貯金';
+    const amount = vals.amount || 0;
+    const cost = isDeposit ? amount : (vals.cost || 0);
+    const idx = recordsData[p].findIndex(r => r.month === mk && r.assetId === assetId);
+    const rec = { month: mk, assetId, amount, cost };
+    if (idx >= 0) recordsData[p][idx] = rec; else recordsData[p].push(rec);
+  });
+  save(`records_${p}`, recordsData[p]);
+  showToast(`${names[p]}の${monthLabel(inputYear, inputMonth)}を保存しました`);
+  renderAll();
+}
+
+// ══════════════════════════════════════
+//  Render: Trend
+// ══════════════════════════════════════
+function renderTrend() {
+  console.log('renderTrend', currentPerson);
+  const empty = document.getElementById('trend-empty');
+  const list = document.getElementById('trend-list');
+  const titleEl = document.getElementById('trend-chart-title');
+  const periodLabel = trendPeriod === 12 ? '過去12か月' : `過去${trendPeriod}か月`;
+
+  if (isAll()) {
+    titleEl.textContent = `総資産推移（合算・${periodLabel}）`;
+    renderTrendAll(empty, list);
+  } else {
+    titleEl.textContent = `${names[currentPerson]}の資産推移（${periodLabel}）`;
+    renderTrendSingle(currentPerson, empty, list);
+  }
+}
+
+function getMonthAgg(p, mk) {
+  const recs = getRecordsForMonth(p, mk);
+  if (!recs.length) return null;
+  const total = recs.reduce((s, r) => s + r.amount, 0);
+  const inv = recs.filter(r => {
+    const a = getAssets(p).find(a => a.id === r.assetId);
+    return a && a.type !== '預貯金';
+  });
+  const cost = inv.reduce((s, r) => s + (r.cost || 0), 0);
+  return { total, cost, gain: total - cost };
+}
+
+function buildTrendItems(agg) {
+  return [...agg].reverse().map((d, i, arr) => {
+    const prev = arr[i + 1];
+    const diff = prev ? d.total - prev.total : null;
+    const diffPct = (prev && prev.total > 0) ? ((d.total - prev.total) / prev.total * 100) : null;
+    const diffHtml = diff !== null
+      ? `<div class="trend-diff ${gainClass(diff)}">前月比 ${fmtSign(diff)}
+          ${diffPct !== null ? `<span style="font-size:11px;opacity:0.75;margin-left:4px;">(${fmtPct(diffPct)})</span>` : ''}
+         </div>`
+      : '<div class="trend-diff" style="color:var(--muted)">（初回記録）</div>';
+    return { d, diffHtml };
+  });
+}
+
+// ══════════════════════════════════════
+function scrollToTrendMonth(mk) {
+  const items = document.querySelectorAll('#trend-list .trend-item[data-mk]');
+  for (const el of items) {
+    if (el.dataset.mk === mk) {
+      el.scrollIntoView({ behavior:'smooth', block:'center' });
+      el.style.outline = '2px solid var(--blue)';
+      el.style.outlineOffset = '2px';
+      setTimeout(() => { el.style.outline = ''; el.style.outlineOffset = ''; }, 1500);
+      return;
+    }
+  }
+}
+
+// カテゴリ別に月ごとの合計を集計する
+function getCatByMonth(persons, mk) {
+  const cats = { '投資信託': 0, '株式': 0, '預貯金': 0 };
+  let total = 0;
+  persons.forEach(p => {
+    const recs = getRecordsForMonth(p, mk);
+    recs.forEach(r => {
+      const a = getAssets(p).find(a => a.id === r.assetId);
+      if (!a) return;
+      cats[a.type] = (cats[a.type] || 0) + r.amount;
+      total += r.amount;
+    });
+  });
+  return { cats, total };
+}
+
+function buildCatDatasets(allMonths, persons) {
+  const CAT_LIST = ['投資信託', '株式', '預貯金'];
+  const CAT_COLORS_ARR = ['#2563EB', '#059669', '#D97706'];
+  return CAT_LIST.map((cat, i) => ({
+    label: cat,
+    color: CAT_COLORS_ARR[i],
+    data: allMonths.map(mk => {
+      const { cats } = getCatByMonth(persons, mk);
+      return cats[cat] || 0;
+    })
+  }));
+}
+
+// ══════════════════════════════════════
+//  SVG Chart Renderer (no dependencies – works in Edge/local-file)
+// ══════════════════════════════════════
+const SVGChart = {
+  _click: null,
+
+  destroy() {
+    const c = document.getElementById('trend-chart-container');
+    if (c) c.innerHTML = '';
+    this._click = null;
+  },
+
+  _niceMax(val) {
+    if (val <= 0) return 1000000;
+    const exp = Math.pow(10, Math.floor(Math.log10(val)));
+    const f = val / exp;
+    const nice = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10;
+    return nice * exp;
+  },
+
+  _yTicks(max, n) {
+    return Array.from({ length: n + 1 }, (_, i) => Math.round((i / n) * max));
+  },
+
+  _fmtY(v) {
+    if (v === 0) return '0';
+    if (v >= 100000000) return (v / 100000000).toFixed(1) + '億';
+    if (v >= 10000) return (v / 10000).toFixed(0) + '万';
+    return v.toLocaleString('ja-JP');
+  },
+
+  _fmtX(lbl) {
+    // "2026年6月" → "6月" or "26/6"
+    return lbl.replace(/\d{4}年/, '').replace('月', '月');
+  },
+
+  _base(W, H, pad, yMax) {
+    const cW = W - pad.l - pad.r;
+    const cH = H - pad.t - pad.b;
+    const ticks = this._yTicks(yMax, 4);
+    let parts = [];
+    // grid + y labels
+    ticks.forEach(v => {
+      const y = pad.t + cH - (v / yMax) * cH;
+      parts.push(`<line x1="${pad.l}" y1="${y.toFixed(1)}" x2="${pad.l + cW}" y2="${y.toFixed(1)}" stroke="#F0F2F5" stroke-width="1"/>`);
+      parts.push(`<text x="${pad.l - 5}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="9" fill="#9CA3AF" font-family="-apple-system,sans-serif">${this._fmtY(v)}</text>`);
+    });
+    // y-axis line
+    parts.push(`<line x1="${pad.l}" y1="${pad.t}" x2="${pad.l}" y2="${pad.t + cH}" stroke="#E5E9F0" stroke-width="1.5"/>`);
+    return parts;
+  },
+
+  renderBar(labels, datasets, onClickFn) {
+    this.destroy();
+    const container = document.getElementById('trend-chart-container');
+    if (!container) return;
+    const W = container.clientWidth || 320;
+    const H = 210;
+    const pad = { t: 10, r: 8, b: 46, l: 52 };
+    const cW = W - pad.l - pad.r;
+    const cH = H - pad.t - pad.b;
+    const n = labels.length;
+
+    const totals = labels.map((_, i) => datasets.reduce((s, d) => s + (d.data[i] || 0), 0));
+    const yMax = this._niceMax(Math.max(...totals) * 1.08);
+
+    const defs = [];
+    let parts = this._base(W, H, pad, yMax);
+
+    const slotW = cW / n;
+    const barW = Math.max(8, Math.min(slotW * 0.68, 26));
+    const R = 3; // corner radius
+
+    labels.forEach((lbl, i) => {
+      const totalH = (totals[i] / yMax) * cH;
+      if (totalH < 0.5) {
+        // x label only
+        const cx = pad.l + i * slotW + slotW / 2;
+        parts.push(`<text x="${cx.toFixed(1)}" y="${H - 4}" text-anchor="end" font-size="9" fill="#9CA3AF" font-family="-apple-system,sans-serif" transform="rotate(-40,${cx.toFixed(1)},${H - 4})">${this._fmtX(lbl)}</text>`);
+        return;
+      }
+
+      const cx = pad.l + i * slotW + slotW / 2;
+      const bx = cx - barW / 2;
+      const barTop = pad.t + cH - totalH;
+      const barBot = pad.t + cH;
+
+      // clipPath: rounded top + rounded bottom for the full bar silhouette
+      const clipId = `bc${i}`;
+      const p = `M${(bx+R).toFixed(1)},${barTop.toFixed(1)} ` +
+        `Q${bx.toFixed(1)},${barTop.toFixed(1)} ${bx.toFixed(1)},${(barTop+R).toFixed(1)} ` +
+        `L${bx.toFixed(1)},${(barBot-R).toFixed(1)} ` +
+        `Q${bx.toFixed(1)},${barBot.toFixed(1)} ${(bx+R).toFixed(1)},${barBot.toFixed(1)} ` +
+        `L${(bx+barW-R).toFixed(1)},${barBot.toFixed(1)} ` +
+        `Q${(bx+barW).toFixed(1)},${barBot.toFixed(1)} ${(bx+barW).toFixed(1)},${(barBot-R).toFixed(1)} ` +
+        `L${(bx+barW).toFixed(1)},${(barTop+R).toFixed(1)} ` +
+        `Q${(bx+barW).toFixed(1)},${barTop.toFixed(1)} ${(bx+barW-R).toFixed(1)},${barTop.toFixed(1)} Z`;
+      defs.push(`<clipPath id="${clipId}"><path d="${p}"/></clipPath>`);
+
+      // Draw segments bottom→top, all with sharp corners (clipped by clipPath)
+      let cumV = 0;
+      [...datasets].reverse().forEach(d => {
+        const v = d.data[i] || 0;
+        if (v <= 0) { cumV += v; return; }
+        const segH = (v / yMax) * cH;
+        const segY = pad.t + cH - ((cumV + v) / yMax) * cH;
+        // +1px height overlap prevents hairline gaps between segments
+        parts.push(`<rect x="${bx.toFixed(1)}" y="${segY.toFixed(1)}" width="${barW}" height="${(segH + 1).toFixed(1)}" fill="${d.color}" clip-path="url(#${clipId})"/>`);
+        cumV += v;
+      });
+
+      // x label
+      const xLbl = this._fmtX(lbl);
+      parts.push(`<text x="${cx.toFixed(1)}" y="${H - 4}" text-anchor="end" font-size="9" fill="#9CA3AF" font-family="-apple-system,sans-serif" transform="rotate(-40,${cx.toFixed(1)},${H - 4})">${xLbl}</text>`);
+      // click area
+      parts.push(`<rect x="${(pad.l + i * slotW).toFixed(1)}" y="${pad.t}" width="${slotW.toFixed(1)}" height="${cH}" fill="transparent" style="cursor:pointer" onclick="SVGChart._click&&SVGChart._click(${i})"/>`);
+    });
+
+    const defsBlock = defs.length ? `<defs>${defs.join('')}</defs>` : '';
+    container.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible;">${defsBlock}${parts.join('')}</svg>`;
+    this._click = onClickFn;
+    this._legend(container, datasets, false);
+  },
+
+  renderLine(labels, datasets, onClickFn) {
+    this.destroy();
+    const container = document.getElementById('trend-chart-container');
+    if (!container) return;
+    const W = container.clientWidth || 320;
+    const H = 210;
+    const pad = { t: 16, r: 12, b: 46, l: 52 };
+    const cW = W - pad.l - pad.r;
+    const cH = H - pad.t - pad.b;
+    const n = labels.length;
+
+    const totals = labels.map((_, i) => datasets.reduce((s, d) => s + (d.data[i] || 0), 0));
+    const yMax = this._niceMax(Math.max(...totals) * 1.1);
+
+    const xOf = i => pad.l + (n <= 1 ? cW / 2 : (i / (n - 1)) * cW);
+    const yOf = v => pad.t + cH - (v / yMax) * cH;
+
+    let parts = this._base(W, H, pad, yMax);
+
+    // defs for gradient fill
+    parts.push(`<defs>
+      <linearGradient id="tg" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="#2563EB" stop-opacity="0.18"/>
+        <stop offset="100%" stop-color="#2563EB" stop-opacity="0"/>
+      </linearGradient>
+    </defs>`);
+
+    // Category lines (thin, semi-transparent, dashed)
+    datasets.forEach(d => {
+      if (n < 2) return;
+      const pts = d.data.map((v, i) => `${xOf(i).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ');
+      parts.push(`<polyline points="${pts}" fill="none" stroke="${d.color}" stroke-width="1.5" stroke-dasharray="5,4" opacity="0.4" stroke-linejoin="round"/>`);
+    });
+
+    // Total fill area
+    if (n >= 2) {
+      const fillPath = `M ${xOf(0).toFixed(1)},${(pad.t + cH).toFixed(1)} ` +
+        totals.map((v, i) => `L ${xOf(i).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ') +
+        ` L ${xOf(n - 1).toFixed(1)},${(pad.t + cH).toFixed(1)} Z`;
+      parts.push(`<path d="${fillPath}" fill="url(#tg)"/>`);
+
+      // Total line (thick, bold)
+      const linePts = totals.map((v, i) => `${xOf(i).toFixed(1)},${yOf(v).toFixed(1)}`).join(' ');
+      parts.push(`<polyline points="${linePts}" fill="none" stroke="#2563EB" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>`);
+
+      // Data points with value labels
+      totals.forEach((v, i) => {
+        const x = xOf(i), y = yOf(v);
+        // Value label above dot (show on first, last, and max)
+        const showLabel = i === 0 || i === n - 1 || v === Math.max(...totals);
+        if (showLabel) {
+          parts.push(`<text x="${x.toFixed(1)}" y="${(y - 9).toFixed(1)}" text-anchor="middle" font-size="9" font-weight="700" fill="#2563EB" font-family="-apple-system,sans-serif">${this._fmtY(v)}</text>`);
+        }
+        parts.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="#2563EB" stroke="#fff" stroke-width="2.5"/>`);
+      });
+    }
+
+    // X labels
+    labels.forEach((lbl, i) => {
+      const x = xOf(i);
+      const xLbl = this._fmtX(lbl);
+      parts.push(`<text x="${x.toFixed(1)}" y="${H - 4}" text-anchor="end" font-size="9" fill="#9CA3AF" font-family="-apple-system,sans-serif" transform="rotate(-40,${x.toFixed(1)},${H - 4})">${xLbl}</text>`);
+    });
+
+    // Click areas
+    if (n >= 2) {
+      const slotW = cW / n;
+      labels.forEach((_, i) => {
+        const ax = Math.max(pad.l, xOf(i) - slotW / 2);
+        parts.push(`<rect x="${ax.toFixed(1)}" y="${pad.t}" width="${slotW.toFixed(1)}" height="${cH}" fill="transparent" style="cursor:pointer" onclick="SVGChart._click&&SVGChart._click(${i})"/>`);
+      });
+    }
+
+    container.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="display:block;overflow:visible;">${parts.join('')}</svg>`;
+    this._click = onClickFn;
+
+    // Legend: total first, then categories (dashed)
+    const legendDs = [
+      { label: '合計', color: '#2563EB', dashed: false },
+      ...datasets.map(d => ({ ...d, dashed: true }))
+    ];
+    this._legend(container, legendDs, true);
+  },
+
+  _legend(container, datasets, hasDashed) {
+    const div = document.createElement('div');
+    div.style.cssText = 'display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:10px;justify-content:center;';
+    datasets.forEach(d => {
+      const item = document.createElement('div');
+      item.style.cssText = 'display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:#374151;';
+      const icon = document.createElement('span');
+      if (d.dashed) {
+        icon.style.cssText = `display:inline-block;width:18px;height:2px;background:${d.color};opacity:0.5;border-top:1.5px dashed ${d.color};`;
+      } else {
+        icon.style.cssText = `display:inline-block;width:10px;height:10px;border-radius:50%;background:${d.color};`;
+      }
+      item.appendChild(icon);
+      item.appendChild(document.createTextNode(d.label));
+      div.appendChild(item);
+    });
+    container.appendChild(div);
+  }
+};
+
+function renderTrendSingle(p, empty, list) {
+  const allMonths = [...new Set(getRecords(p).map(r => r.month))].sort().slice(-trendPeriod);
+  if (!allMonths.length) {
+    empty.style.display = 'block';
+    list.innerHTML = '';
+    SVGChart.destroy();
+    return;
+  }
+  empty.style.display = 'none';
+  const agg = allMonths.map(mk => {
+    const { cats, total } = getCatByMonth([p], mk);
+    const base = getMonthAgg(p, mk) || { total: 0, cost: 0, gain: 0 };
+    return { mk, total, cats, cost: base.cost, gain: base.gain };
+  });
+  const labels = agg.map(d => monthLabelFromKey(d.mk));
+  const datasets = buildCatDatasets(allMonths, [p]);
+  const onClickFn = idx => scrollToTrendMonth(agg[idx].mk);
+
+  if (trendChartType === 'line') {
+    SVGChart.renderLine(labels, datasets, onClickFn);
+  } else {
+    SVGChart.renderBar(labels, datasets, onClickFn);
+  }
+
+  list.innerHTML = buildTrendItems(agg).map(({ d, diffHtml }) =>
+    `<div class="trend-item" data-mk="${d.mk}">
+      <div class="trend-month">${monthLabelFromKey(d.mk)}</div>
+      <div class="trend-total">¥${fmt(d.total)}</div>
+      ${diffHtml}
+      <div class="trend-sub" style="display:flex;gap:10px;flex-wrap:wrap;">
+        <span style="color:#2563EB;font-weight:600;">投信 ¥${fmt(d.cats['投資信託']||0)}</span>
+        <span style="color:#059669;font-weight:600;">株式 ¥${fmt(d.cats['株式']||0)}</span>
+        <span style="color:#D97706;font-weight:600;">預貯金 ¥${fmt(d.cats['預貯金']||0)}</span>
+      </div>
+    </div>`
+  ).join('');
+}
+
+function renderTrendAll(empty, list) {
+  const m0 = [...new Set(getRecords(0).map(r => r.month))].sort();
+  const m1 = [...new Set(getRecords(1).map(r => r.month))].sort();
+  const allMonths = [...new Set([...m0, ...m1])].sort().slice(-trendPeriod);
+  if (!allMonths.length) {
+    empty.style.display = 'block';
+    list.innerHTML = '';
+    SVGChart.destroy();
+    return;
+  }
+  empty.style.display = 'none';
+  const agg = allMonths.map(mk => {
+    const { cats, total } = getCatByMonth([0, 1], mk);
+    const a0 = getMonthAgg(0, mk) || { total: 0 };
+    const a1 = getMonthAgg(1, mk) || { total: 0 };
+    return { mk, total, cats, t0: a0.total, t1: a1.total };
+  });
+  const labels = agg.map(d => monthLabelFromKey(d.mk));
+  const datasets = buildCatDatasets(allMonths, [0, 1]);
+  const onClickFn = idx => scrollToTrendMonth(agg[idx].mk);
+
+  if (trendChartType === 'line') {
+    SVGChart.renderLine(labels, datasets, onClickFn);
+  } else {
+    SVGChart.renderBar(labels, datasets, onClickFn);
+  }
+
+  list.innerHTML = buildTrendItems(agg).map(({ d, diffHtml }) =>
+    `<div class="trend-item" data-mk="${d.mk}">
+      <div class="trend-month">${monthLabelFromKey(d.mk)}</div>
+      <div class="trend-total">¥${fmt(d.total)}</div>
+      ${diffHtml}
+      <div class="trend-sub" style="display:flex;gap:10px;flex-wrap:wrap;">
+        <span style="color:#2563EB;font-weight:600;">投信 ¥${fmt(d.cats['投資信託']||0)}</span>
+        <span style="color:#059669;font-weight:600;">株式 ¥${fmt(d.cats['株式']||0)}</span>
+        <span style="color:#D97706;font-weight:600;">預貯金 ¥${fmt(d.cats['預貯金']||0)}</span>
+      </div>
+      <div class="trend-sub" style="display:flex;gap:14px;margin-top:2px;">
+        <span style="color:var(--p1);font-weight:600;">${names[0]} ¥${fmt(d.t0)}</span>
+        <span style="color:var(--p2);font-weight:600;">${names[1]} ¥${fmt(d.t1)}</span>
+      </div>
+    </div>`
+  ).join('');
+}
+window.openEditAsset = id => {
+  if (isAll()) return;
+  editingAssetId = id;
+  const a = getAssets(currentPerson).find(a => a.id === id);
+  if (!a) return;
+  document.getElementById('modal-title').textContent = '資産を編集';
+  document.getElementById('f-type').value = a.type;
+  document.getElementById('f-name').value = a.name;
+  updateNameLabel(a.type);
+  document.getElementById('modal-overlay').classList.add('open');
+};
+
+window.deleteAsset = async id => {
+  if (isAll()) return;
+  const p = currentPerson;
+  const a = getAssets(p).find(a => a.id === id);
+  if (!a) return;
+  const ok = await askConfirm(`「${a.name}」を削除しますか？\n関連する月次データも削除されます。`, { title: '資産を削除' });
+  if (!ok) return;
+  assetsData[p] = assetsData[p].filter(a => a.id !== id);
+  recordsData[p] = recordsData[p].filter(r => r.assetId !== id);
+  save(`assets_${p}`, assetsData[p]);
+  save(`records_${p}`, recordsData[p]);
+  showToast('資産を削除しました');
+  renderAll();
+};
+
+function updateNameLabel(type) {
+  document.getElementById('f-name-label').textContent = type === '預貯金' ? '口座名' : '銘柄名';
+  document.getElementById('f-name').placeholder = type === '預貯金' ? '例：楽天銀行 普通預金' : '例：eMAXIS Slim 全世界株式';
+}
+document.getElementById('f-type').addEventListener('change', e => updateNameLabel(e.target.value));
+
+function openAddAsset() {
+  if (isAll()) {
+    // 合算表示中に＋を押した場合は自動で人1に切り替えてから追加画面を開く
+    currentPerson = 0;
+    personByScreen[currentScreen] = 0;
+    updatePersonSwitch();
+    renderAll();
+  }
+  editingAssetId = null;
+  document.getElementById('modal-title').textContent = `資産を追加（${names[currentPerson]}）`;
+  document.getElementById('f-type').value = '投資信託';
+  document.getElementById('f-name').value = '';
+  updateNameLabel('投資信託');
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  editingAssetId = null;
+}
+document.getElementById('add-asset-btn').addEventListener('click', openAddAsset);
+document.getElementById('modal-cancel').addEventListener('click', closeModal);
+document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal(); });
+
+document.getElementById('modal-save').addEventListener('click', () => {
+  if (isAll()) return;
+  const p = currentPerson;
+  const name = document.getElementById('f-name').value.trim();
+  const type = document.getElementById('f-type').value;
+  if (!name) { alert('名称を入力してください'); return; }
+  if (editingAssetId) {
+    const idx = assetsData[p].findIndex(a => a.id === editingAssetId);
+    if (idx >= 0) assetsData[p][idx] = { ...assetsData[p][idx], name, type };
+  } else {
+    assetsData[p].push({ id: Date.now().toString(), name, type });
+  }
+  save(`assets_${p}`, assetsData[p]);
+  closeModal();
+  showToast(editingAssetId ? '資産を更新しました' : '資産を追加しました');
+  renderAll();
+});
+
+// ══════════════════════════════════════
+//  Month nav & Picker
+// ══════════════════════════════════════
+document.getElementById('back-to-today-btn').addEventListener('click', () => {
+  const d = new Date();
+  inputYear = d.getFullYear();
+  inputMonth = d.getMonth() + 1;
+  renderInput();
+});
+document.getElementById('prev-month-btn').addEventListener('click', () => {
+  if (inputMonth === 1) { inputYear--; inputMonth = 12; } else inputMonth--;
+  renderInput();
+});
+document.getElementById('next-month-btn').addEventListener('click', () => {
+  if (inputMonth === 12) { inputYear++; inputMonth = 1; } else inputMonth++;
+  renderInput();
+});
+document.getElementById('save-input-btn').addEventListener('click', saveInput);
+
+// ── Month Picker (drum-roll) ──
+const PICK_YEAR_RANGE = 10; // 今年±10年
+let pickerYear, pickerMonth;
+
+function openMonthPicker() {
+  pickerYear = inputYear;
+  pickerMonth = inputMonth;
+  buildDrums();
+  document.getElementById('month-picker-overlay').classList.add('open');
+  // 少し待ってスクロール位置を設定
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => scrollDrumsToSelected());
+  });
+}
+
+function buildDrums() {
+  const now = new Date();
+  const baseYear = now.getFullYear();
+  const yearCol = document.getElementById('drum-year');
+  const monthCol = document.getElementById('drum-month');
+
+  yearCol.innerHTML = '<div class="drum-pad"></div>' +
+    Array.from({length: PICK_YEAR_RANGE * 2 + 1}, (_, i) => {
+      const y = baseYear - PICK_YEAR_RANGE + i;
+      return `<div class="drum-item" data-year="${y}">${y}年</div>`;
+    }).join('') + '<div class="drum-pad"></div>';
+
+  monthCol.innerHTML = '<div class="drum-pad"></div>' +
+    Array.from({length: 12}, (_, i) => {
+      const m = i + 1;
+      return `<div class="drum-item" data-month="${m}">${m}月</div>`;
+    }).join('') + '<div class="drum-pad"></div>';
+}
+
+function scrollDrumsToSelected() {
+  const now = new Date();
+  const baseYear = now.getFullYear();
+  const yearCol = document.getElementById('drum-year');
+  const monthCol = document.getElementById('drum-month');
+  const yIdx = (pickerYear - (baseYear - PICK_YEAR_RANGE));
+  const mIdx = pickerMonth - 1;
+  yearCol.scrollTop = yIdx * 44;
+  monthCol.scrollTop = mIdx * 44;
+  updateDrumHighlight(yearCol, 'data-year');
+  updateDrumHighlight(monthCol, 'data-month');
+}
+
+function updateDrumHighlight(col, attr) {
+  const mid = col.scrollTop + col.clientHeight / 2;
+  col.querySelectorAll('.drum-item').forEach(el => {
+    const elMid = el.offsetTop + 22;
+    el.classList.toggle('selected', Math.abs(elMid - mid) < 22);
+  });
+}
+
+['drum-year', 'drum-month'].forEach(id => {
+  const col = document.getElementById(id);
+  const attr = id === 'drum-year' ? 'data-year' : 'data-month';
+  col.addEventListener('scroll', () => updateDrumHighlight(col, attr), { passive: true });
+  // snap後の選択値確定
+  col.addEventListener('scrollend', () => {
+    updateDrumHighlight(col, attr);
+    const sel = col.querySelector('.drum-item.selected');
+    if (!sel) return;
+    if (attr === 'data-year') pickerYear = parseInt(sel.dataset.year);
+    else pickerMonth = parseInt(sel.dataset.month);
+  });
+  // scrollend非対応ブラウザ対策
+  let st;
+  col.addEventListener('scroll', () => {
+    clearTimeout(st);
+    st = setTimeout(() => {
+      updateDrumHighlight(col, attr);
+      const sel = col.querySelector('.drum-item.selected');
+      if (!sel) return;
+      if (attr === 'data-year') pickerYear = parseInt(sel.dataset.year);
+      else pickerMonth = parseInt(sel.dataset.month);
+    }, 120);
+  }, { passive: true });
+});
+
+document.getElementById('month-picker-ok').addEventListener('click', () => {
+  // 確定時に最終選択値を取得
+  ['drum-year','drum-month'].forEach(id => {
+    const col = document.getElementById(id);
+    const sel = col.querySelector('.drum-item.selected');
+    if (!sel) return;
+    if (id === 'drum-year') pickerYear = parseInt(sel.dataset.year);
+    else pickerMonth = parseInt(sel.dataset.month);
+  });
+  inputYear = pickerYear;
+  inputMonth = pickerMonth;
+  document.getElementById('month-picker-overlay').classList.remove('open');
+  renderInput();
+});
+document.getElementById('month-picker-cancel').addEventListener('click', () => {
+  document.getElementById('month-picker-overlay').classList.remove('open');
+});
+document.getElementById('month-picker-overlay').addEventListener('click', e => {
+  if (e.target === e.currentTarget) document.getElementById('month-picker-overlay').classList.remove('open');
+});
+
+// ══════════════════════════════════════
+//  Settings
+// ══════════════════════════════════════
+function initNameFields() {
+  document.getElementById('name-input-0').value = names[0];
+  document.getElementById('name-input-1').value = names[1];
+}
+document.getElementById('save-names-btn').addEventListener('click', () => {
+  const n0 = document.getElementById('name-input-0').value.trim() || '人物1';
+  const n1 = document.getElementById('name-input-1').value.trim() || '人物2';
+  names = [n0, n1];
+  save('person_names', names);
+  updatePersonSwitch();
+  renderAll();
+  showToast('名前を保存しました');
+});
+
+document.getElementById('export-btn').addEventListener('click', () => {
+  const data = { names, assets: assetsData, records: recordsData };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const d = new Date();
+  const fname = `asset-manager-backup-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}.json`;
+  const a = document.createElement('a'); a.href = url; a.download = fname; a.click();
+  URL.revokeObjectURL(url);
+  showToast('エクスポートしました');
+});
+
+document.getElementById('import-input').addEventListener('change', e => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (!Array.isArray(data.assets) || !Array.isArray(data.records)) throw new Error();
+      names = data.names || names;
+      assetsData = data.assets;
+      recordsData = data.records;
+      save('person_names', names);
+      save('assets_0', assetsData[0]); save('assets_1', assetsData[1]);
+      save('records_0', recordsData[0]); save('records_1', recordsData[1]);
+      initNameFields();
+      updatePersonSwitch();
+      renderAll();
+      showToast('インポートが完了しました');
+    } catch { alert('JSONファイルが不正です。'); }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+
+document.getElementById('delete-all-btn').addEventListener('click', async () => {
+  const ok = await askConfirm('本当に削除しますか？\n全員のすべてのデータが削除されます。この操作は元に戻せません。', { title: '全データを削除' });
+  if (!ok) return;
+  assetsData = [[], []]; recordsData = [[], []]; names = ['人物1','人物2'];
+  ['assets_0','assets_1','records_0','records_1','person_names'].forEach(k => localStorage.removeItem(k));
+  initNameFields(); updatePersonSwitch(); renderAll();
+  showToast('全データを削除しました');
+});
+
+// ══════════════════════════════════════
+//  Tabs
+// ══════════════════════════════════════
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    btn.classList.add('active');
+    const screen = btn.dataset.screen;
+    document.getElementById('screen-' + screen).classList.add('active');
+    currentScreen = screen;
+    currentPerson = sanitizePerson(screen, personByScreen[screen]);
+    personByScreen[screen] = currentPerson;
+    updatePersonSwitch();
+    renderAll();
+  });
+});
+
+// ══════════════════════════════════════
+//  Chart type toggle
+// ══════════════════════════════════════
+document.getElementById('chart-type-stacked').addEventListener('click', () => {
+  trendChartType = 'stacked';
+  document.getElementById('chart-type-stacked').classList.add('active');
+  document.getElementById('chart-type-line').classList.remove('active');
+  renderTrend();
+});
+document.getElementById('chart-type-line').addEventListener('click', () => {
+  trendChartType = 'line';
+  document.getElementById('chart-type-line').classList.add('active');
+  document.getElementById('chart-type-stacked').classList.remove('active');
+  renderTrend();
+});
+
+// ── Period toggle ──
+[3, 6, 12].forEach(n => {
+  document.getElementById(`period-${n}`).addEventListener('click', () => {
+    trendPeriod = n;
+    [3, 6, 12].forEach(m => {
+      document.getElementById(`period-${m}`).classList.toggle('active', m === n);
+    });
+    renderTrend();
+  });
+});
+
+// ══════════════════════════════════════
+//  Init
+// ══════════════════════════════════════
+function renderAll() {
+  console.log('renderAll', currentScreen, currentPerson);
+  switch (currentScreen) {
+    case 'summary':  renderSummary(); break;
+    case 'input':    renderInput();   break;
+    case 'trend':    renderTrend();   break;
+    case 'settings': renderAssets();  break;
+  }
+}
+
+document.getElementById('today-date').textContent = todayStr();
+initNameFields();
+updatePersonSwitch();
+renderAll();
+
+// ── ヘッダー高さをCSS変数に設定（月ナビのstickyオフセット用）──
+function updateHeaderHeight() {
+  const h = document.querySelector('.header');
+  if (h) document.documentElement.style.setProperty('--header-h', h.offsetHeight + 'px');
+}
+updateHeaderHeight();
+window.addEventListener('resize', updateHeaderHeight);
+</script>
+</body>
+</html>
